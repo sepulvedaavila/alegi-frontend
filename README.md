@@ -25,7 +25,7 @@ This is a modern React application built with Vite, TypeScript, and shadcn-ui co
 
 ```sh
 # Step 1: Clone the repository
-git clone <YOUR_GIT_URL>
+git clone git@github.com:sepulvedaavila/alegi-frontend.git
 
 # Step 2: Navigate to the project directory
 cd alegi-frontend
@@ -82,4 +82,10 @@ The project follows a standard Vite + React structure with TypeScript support. K
 
 ## License
 
-[Add your license information here]
+Copyright (c) 2024 Alegi. All Rights Reserved.
+
+This software and associated documentation files (the "Software") are proprietary and confidential. The Software is protected by copyright laws and international copyright treaties, as well as other intellectual property laws and treaties.
+
+Unauthorized copying, distribution, modification, public display, or public performance of the Software is strictly prohibited. No part of this Software may be reproduced, distributed, or transmitted in any form or by any means, including photocopying, recording, or other electronic or mechanical methods, without the prior written permission of Alegi.
+
+For licensing inquiries, please contact [your contact information].
