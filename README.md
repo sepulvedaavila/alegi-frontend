@@ -1,69 +1,85 @@
-# Welcome to your Lovable project
+# Alegi Frontend
 
-## Project info
+## Project Overview
 
-**URL**: https://lovable.dev/projects/f4ef61cf-22d4-4ed2-9a14-fc4a22c40d66
+This is a modern React application built with Vite, TypeScript, and shadcn-ui components.
 
-## How can I edit this code?
-
-There are several ways of editing your application.
-
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/f4ef61cf-22d4-4ed2-9a14-fc4a22c40d66) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with .
+## Technologies Used
 
 - Vite
 - TypeScript
 - React
 - shadcn-ui
 - Tailwind CSS
+- Supabase
+- React Query
+- React Router DOM
 
-## How can I deploy this project?
+## Local Development
 
-Simply open [Lovable](https://lovable.dev/projects/f4ef61cf-22d4-4ed2-9a14-fc4a22c40d66) and click on Share -> Publish.
+### Prerequisites
 
-## I want to use a custom domain - is that possible?
+- Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
 
-We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)
+### Setup Instructions
+
+```sh
+# Step 1: Clone the repository
+git clone <YOUR_GIT_URL>
+
+# Step 2: Navigate to the project directory
+cd alegi-frontend
+
+# Step 3: Install the necessary dependencies
+npm i
+
+# Step 4: Start the development server
+npm run dev
+```
+
+The development server will start at `http://localhost:8080` with hot-reloading enabled.
+
+## Deployment
+
+### Deploying to Vercel
+
+1. **Prerequisites**
+   - A Vercel account
+   - Your code pushed to a Git repository (GitHub, GitLab, or Bitbucket)
+
+2. **Deployment Steps**
+   - Go to [vercel.com](https://vercel.com)
+   - Click "New Project"
+   - Import your repository
+   - Configure your environment variables (especially Supabase credentials)
+   - Deploy
+
+3. **Environment Variables**
+   Make sure to set up the following environment variables in your Vercel project:
+   - `VITE_SUPABASE_URL`
+   - `VITE_SUPABASE_ANON_KEY`
+   - Any other environment variables your application needs
+
+### Build Commands
+
+- Development build: `npm run build:dev`
+- Production build: `npm run build`
+- Preview build: `npm run preview`
+
+## Project Structure
+
+The project follows a standard Vite + React structure with TypeScript support. Key directories include:
+
+- `/src` - Source code
+- `/public` - Static assets
+- `/supabase` - Supabase configuration and types
+
+## Contributing
+
+1. Create a new branch for your feature
+2. Make your changes
+3. Submit a pull request
+
+## License
+
+[Add your license information here]
