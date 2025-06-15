@@ -20,9 +20,12 @@ const Footer = () => {
               <div>
                 <h3 className="text-sm font-semibold text-gray-900 mb-3">Product</h3>
                 <ul className="space-y-2">
-                  <li><a href="/how-it-works" className="text-gray-600 hover:text-alegi-blue transition-colors">How It Works</a></li>
-                  
-                  <li><a href="/faq" className="text-gray-600 hover:text-alegi-blue transition-colors">FAQs</a></li>
+                  <li><a href="#how-it-works" className="text-gray-600 hover:text-alegi-blue transition-colors">How It Works</a></li>
+                  <li><a href="#features" className="text-gray-600 hover:text-alegi-blue transition-colors">Features</a></li>
+                  <li><a href="#solutions" className="text-gray-600 hover:text-alegi-blue transition-colors">Solutions</a></li>
+                  <li><a href="#lumina" className="text-gray-600 hover:text-alegi-blue transition-colors">Lumina</a></li>
+                  <li><a href="#security" className="text-gray-600 hover:text-alegi-blue transition-colors">Security</a></li>
+                  <li><a href="#faq" className="text-gray-600 hover:text-alegi-blue transition-colors">FAQs</a></li>
                 </ul>
               </div>
               
