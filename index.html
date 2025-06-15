@@ -1,0 +1,120 @@
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <!-- Google Analytics with Consent Mode -->
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      
+      // Default consent to 'denied' until user provides consent
+      gtag('consent', 'default', {
+        'analytics_storage': 'denied',
+        'ad_storage': 'denied'
+      });
+      
+      // Check for existing consent
+      const cookieConsent = localStorage.getItem('cookie-consent');
+      if (cookieConsent === 'all') {
+        gtag('consent', 'update', {
+          'analytics_storage': 'granted',
+          'ad_storage': 'granted'
+        });
+      }
+      
+      gtag('config', 'G-CNRY0D7TG5');
+    </script>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-CNRY0D7TG5" crossorigin="anonymous"></script>
+    <!-- End Google Analytics -->
+    
+    <!-- Google tag (gtag.js) event - delayed navigation helper -->
+    <script>
+      // Helper function to delay opening a URL until a gtag event is sent.
+      // Call it in response to an action that should navigate to a URL.
+      function gtagSendEvent(url) {
+        var callback = function () {
+          if (typeof url === 'string') {
+            window.location = url;
+          }
+        };
+        gtag('event', 'conversion_event_submit_lead_form', {
+          'event_callback': callback,
+          'event_timeout': 2000,
+          // <event_parameters>
+        });
+        return false;
+      }
+    </script>
+    <!-- End Google conversion tracking -->
+    
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ALEGI - AI-Powered Legal Case Prediction & Analysis</title>
+    <meta name="description" content="Transform your legal practice with AI-powered case predictions, legal analytics, and insights. ALEGI helps lawyers, firms, and individuals predict legal outcomes with confidence." />
+    <meta name="keywords" content="Legal Case Prediction, AI for Law, AI for Legal Cases, Predict my case with AI, AI Legal insights, AI Legal Analytics, AI for lawyers, case outcome prediction, legal technology, predictive analytics for law" />
+    <meta name="author" content="ALEGI" />
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/lovable-uploads/f2438510-9c7b-4111-bec7-e635a012ecb8.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/lovable-uploads/f2438510-9c7b-4111-bec7-e635a012ecb8.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/lovable-uploads/f2438510-9c7b-4111-bec7-e635a012ecb8.png" />
+    <link rel="mask-icon" href="/lovable-uploads/f2438510-9c7b-4111-bec7-e635a012ecb8.png" color="#5bbad5" />
+    <meta name="msapplication-TileImage" content="/lovable-uploads/f2438510-9c7b-4111-bec7-e635a012ecb8.png" />
+    <meta name="msapplication-TileColor" content="#1E3A8A" />
+    <meta name="theme-color" content="#1E3A8A" />
+    
+    <!-- Open Graph / Social Media -->
+    <meta property="og:image" content="/lovable-uploads/73029c9a-c9db-49e3-bc50-f2a041424854.png" />
+    <meta property="og:title" content="ALEGI - AI-Powered Legal Case Prediction & Analysis" />
+    <meta property="og:description" content="Experience AI-powered legal insights that help you predict case outcomes with confidence. Advanced legal analytics for lawyers and legal professionals." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://www.alegi.ai" />
+    <meta property="og:site_name" content="ALEGI" />
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://www.alegi.ai" />
+    <meta name="twitter:title" content="ALEGI - AI Legal Prediction Platform" />
+    <meta name="twitter:description" content="Predict legal case outcomes with AI. Get insights, analytics, and recommendations for your legal case." />
+    <meta name="twitter:image" content="/lovable-uploads/73029c9a-c9db-49e3-bc50-f2a041424854.png" />
+    <meta name="twitter:site" content="@alegi" />
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://www.alegi.ai" />
+    
+    <!-- Meta Pixel Code with Consent Mode -->
+    <script>
+    !function(f,b,e,v,n,t,s)
+    {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+    if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+    n.queue=[];t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];
+    s.parentNode.insertBefore(t,s)}(window, document,'script',
+    'https://connect.facebook.net/en_US/fbevents.js');
+    
+    // Check for existing consent
+    const fbCookieConsent = localStorage.getItem('cookie-consent');
+    if (fbCookieConsent === 'all') {
+      fbq('init', '543466487830232');
+      fbq('track', 'PageView');
+    } else {
+      fbq('consent', 'revoke');
+      fbq('init', '543466487830232');
+    }
+    </script>
+    <!-- End Meta Pixel Code -->
+  </head>
+
+  <body>
+    <!-- Meta Pixel Noscript (moved from head to body for HTML compliance) -->
+    <noscript><img height="1" width="1" style="display:none"
+    src="https://www.facebook.com/tr?id=543466487830232&ev=PageView&noscript=1"
+    /></noscript>
+    
+    <div id="root"></div>
+    <script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

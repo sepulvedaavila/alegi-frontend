@@ -1,0 +1,6 @@
+
+[functions]
+  [functions.shared_env]
+    CORS_ORIGIN = "*"
+    SUPABASE_URL = "https://zunckttwoeuacolbgpnu.supabase.co"
+    SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp1bmNrdHR3b2V1YWNvbGJncG51Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDEyOTE1MjgsImV4cCI6MjA1Njg2NzUyOH0.AmN943iz1p8M34QDWnby_N3qPIyzi0OK8N4R9_XW_yo"
