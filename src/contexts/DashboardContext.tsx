@@ -95,21 +95,6 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [centerWidgets, rightWidgets]);
 
-  const toggleWidgetEnabled = useCallback((widgetId: string, columnId: ColumnId) => {
-    if (columnId === 'centerColumn') {
-      setCenterWidgets(widgets => 
-        widgets.map(widget => 
-          widget.id === widgetId ? {...widget, enabled: !widget.enabled} : widget
-        )
-      );
-    } else {
-      setRightWidgets(widgets => 
-        widgets.map(widget => 
-          widget.id === widgetId ? {...widget, enabled: !widget.enabled} : widget
-        )
-      );
-    }
-  }, []);
 
   const resizeWidget = useCallback((widgetId: string, columnId: ColumnId, newSize: 'small' | 'medium' | 'large') => {
     if (columnId === 'centerColumn') {
@@ -156,7 +141,6 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
       favoriteCases,
       toggleSidebar,
       moveWidget,
-      toggleWidgetEnabled,
       resizeWidget,
       selectCase,
       selectComparisonCase,

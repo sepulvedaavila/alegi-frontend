@@ -3,7 +3,7 @@ import { useRef } from 'react';
 import { Widget, ColumnId } from '@/types/dashboard';
 import { useDashboard } from '@/hooks/useDashboard';
 import { cn } from '@/lib/utils';
-import { GripVertical, X, Maximize2, Minimize2, MoreHorizontal } from 'lucide-react';
+import { GripVertical, Maximize2, Minimize2, MoreHorizontal } from 'lucide-react';
 import WidgetContent from './WidgetContent';
 
 interface DraggableWidgetProps {
@@ -23,7 +23,7 @@ const DraggableWidget = ({
   onDrop,
   isComparison
 }: DraggableWidgetProps) => {
-  const { toggleWidgetEnabled, resizeWidget } = useDashboard();
+  const { resizeWidget } = useDashboard();
   const ref = useRef<HTMLDivElement>(null);
 
   const handleDragStart = (e: React.DragEvent) => {
@@ -52,9 +52,6 @@ const DraggableWidget = ({
     onDragEnd();
   };
 
-  const handleClose = () => {
-    toggleWidgetEnabled(widget.id, columnId);
-  };
 
   const handleResize = () => {
     const sizes: ('small' | 'medium' | 'large')[] = ['small', 'medium', 'large'];
@@ -108,13 +105,6 @@ const DraggableWidget = ({
             title="More options"
           >
             <MoreHorizontal size={14} className="text-gray-500" />
-          </button>
-          <button
-            onClick={handleClose}
-            className="p-1 rounded-full hover:bg-gray-200 transition-colors"
-            title="Close widget"
-          >
-            <X size={14} className="text-gray-500" />
           </button>
         </div>
       </div>

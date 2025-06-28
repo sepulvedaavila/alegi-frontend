@@ -57,7 +57,7 @@ const DashboardContent = ({ dashboardRef }: DashboardContentProps) => {
             </div>
             <WidgetContainer 
               columnId="centerColumn" 
-              widgets={mainCenterWidgets.filter(w => w.enabled)}
+              widgets={mainCenterWidgets}
               title="Case Insights"
               isComparison={true}
             />
@@ -77,7 +77,7 @@ const DashboardContent = ({ dashboardRef }: DashboardContentProps) => {
             {/* Other Case Insights */}
             <WidgetContainer 
               columnId="centerColumn" 
-              widgets={mainCenterWidgets.filter(w => w.enabled)}
+              widgets={mainCenterWidgets}
               title="Case Insights"
               isComparison={false}
             />
@@ -90,7 +90,7 @@ const DashboardContent = ({ dashboardRef }: DashboardContentProps) => {
         <div className="sticky top-4">
           <WidgetContainer 
             columnId="rightColumn" 
-            widgets={rightWidgets.filter(w => w.enabled)} 
+            widgets={rightWidgets} 
             title="Actions"
             isComparison={false}
           />
