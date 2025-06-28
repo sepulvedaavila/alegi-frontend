@@ -21,7 +21,7 @@ const SuccessMessage = ({ showCalendly, resetForm }: SuccessMessageProps) => {
           
           <div 
             className="calendly-inline-widget w-full" 
-            data-url="https://calendly.com/jmayoral-alegi?hide_gdpr_banner=1" 
+            data-url={import.meta.env.VITE_CALENDLY_URL} 
             style={{ minWidth: '320px', height: '700px' }}
           ></div>
           

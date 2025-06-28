@@ -13,6 +13,7 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
   const [recentCases] = useState<Case[]>(mockCases);
   const [selectedCase, setSelectedCase] = useState<Case | null>(mockCases[0]);
   const [comparisonCase, setComparisonCase] = useState<Case | null>(null);
+  const [favoriteCases, setFavoriteCases] = useState<Case[]>([]);
 
   const toggleSidebar = useCallback(() => {
     setSidebarCollapsed(prev => !prev);
@@ -126,6 +127,24 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
+  const toggleFavorite = useCallback((caseId: string) => {
+    const caseToToggle = recentCases.find(c => c.id === caseId);
+    if (!caseToToggle) return;
+
+    setFavoriteCases(prev => {
+      const isAlreadyFavorite = prev.some(c => c.id === caseId);
+      if (isAlreadyFavorite) {
+        return prev.filter(c => c.id !== caseId);
+      } else {
+        return [...prev, caseToToggle];
+      }
+    });
+  }, [recentCases]);
+
+  const isFavorite = useCallback((caseId: string) => {
+    return favoriteCases.some(c => c.id === caseId);
+  }, [favoriteCases]);
+
   return (
     <DashboardContext.Provider value={{
       centerWidgets,
@@ -134,12 +153,15 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
       selectedCase,
       recentCases,
       comparisonCase,
+      favoriteCases,
       toggleSidebar,
       moveWidget,
       toggleWidgetEnabled,
       resizeWidget,
       selectCase,
-      selectComparisonCase
+      selectComparisonCase,
+      toggleFavorite,
+      isFavorite
     }}>
       {children}
     </DashboardContext.Provider>

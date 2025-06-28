@@ -79,7 +79,7 @@ export function useCtaForm() {
       let directFormspreeSuccess = false;
       try {
         console.log('Attempting direct Formspree submission...');
-        const directResponse = await fetch('https://formspree.io/f/xkgjobbk', {
+        const directResponse = await fetch(import.meta.env.VITE_FORMSPREE_URL, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -110,7 +110,7 @@ export function useCtaForm() {
       if (!directFormspreeSuccess) {
         console.log('Attempting submission through edge function...');
         // Call the edge function to send emails via Formspree
-        const response = await fetch('https://zunckttwoeuacolbgpnu.supabase.co/functions/v1/send-waitlist-email', {
+        const response = await fetch(import.meta.env.VITE_SUPABASE_EDGE_FUNCTION_URL, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

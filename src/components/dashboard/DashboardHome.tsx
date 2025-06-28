@@ -6,15 +6,18 @@ import DashboardHeader from './header/DashboardHeader';
 import ExportMenu from './header/ExportMenu';
 import DashboardContent from './content/DashboardContent';
 import NewCaseModal from '@/components/cases/NewCaseModal';
+import { useDashboard } from '@/contexts/DashboardContext';
 
 const DashboardHome = () => {
-  const [isFavorite, setIsFavorite] = useState(false);
+  const { selectedCase, toggleFavorite, isFavorite } = useDashboard();
   const [isNewCaseModalOpen, setIsNewCaseModalOpen] = useState(false);
   const dashboardRef = useRef<HTMLDivElement>(null);
 
   // Handle favorite toggle
-  const handleFavoriteToggle = (newState: boolean) => {
-    setIsFavorite(newState);
+  const handleFavoriteToggle = () => {
+    if (selectedCase) {
+      toggleFavorite(selectedCase.id);
+    }
   };
 
   // Open the new case modal
@@ -28,7 +31,7 @@ const DashboardHome = () => {
         <div className="max-w-[1920px] mx-auto px-4 sm:px-6 md:px-8">
           <div className="flex items-center justify-between">
             <DashboardHeader 
-              isFavorite={isFavorite} 
+              isFavorite={selectedCase ? isFavorite(selectedCase.id) : false} 
               onFavoriteToggle={handleFavoriteToggle} 
             />
             <div className="flex items-center gap-3">

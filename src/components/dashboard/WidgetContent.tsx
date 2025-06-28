@@ -304,46 +304,6 @@ const WidgetContent = ({ type, isComparison = false }: WidgetContentProps) => {
           </div>
         </div>
       );
-    case 'whatIfAnalysis':
-      return (
-        <div className="space-y-3">
-          <h4 className="text-sm font-medium">What-If Analysis</h4>
-          <p className="text-xs text-gray-500">Modify case factors to see how they affect the predicted outcome</p>
-          
-          <div className="space-y-2 mt-4">
-            <div>
-              <label className="text-xs font-medium">Expert Witness Quality</label>
-              <select className="mt-1 block w-full text-xs border border-gray-300 rounded-md p-1">
-                <option>High Quality Expert</option>
-                <option>Medium Quality Expert</option>
-                <option>No Expert Witness</option>
-              </select>
-            </div>
-            
-            <div>
-              <label className="text-xs font-medium">Settlement Demand</label>
-              <select className="mt-1 block w-full text-xs border border-gray-300 rounded-md p-1">
-                <option>$500,000 - $750,000</option>
-                <option>$750,000 - $1,000,000</option>
-                <option>$1,000,000 - $1,250,000</option>
-              </select>
-            </div>
-            
-            <div>
-              <label className="text-xs font-medium">Discovery Timeline</label>
-              <select className="mt-1 block w-full text-xs border border-gray-300 rounded-md p-1">
-                <option>Standard (6 months)</option>
-                <option>Expedited (3 months)</option>
-                <option>Extended (9 months)</option>
-              </select>
-            </div>
-          </div>
-          
-          <button className="w-full mt-4 bg-alegi-blue text-white text-xs px-3 py-2 rounded">
-            Recalculate Prediction
-          </button>
-        </div>
-      );
     case 'legalResearch':
       return (
         <div className="flex items-center justify-center h-full">

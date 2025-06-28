@@ -5,7 +5,7 @@ import { useDashboard } from '@/contexts/DashboardContext';
 import { toast } from 'sonner';
 
 interface DashboardHeaderProps {
-  onFavoriteToggle: (isFavorite: boolean) => void;
+  onFavoriteToggle: () => void;
   isFavorite: boolean;
 }
 
@@ -13,9 +13,8 @@ const DashboardHeader = ({ onFavoriteToggle, isFavorite }: DashboardHeaderProps)
   const { selectedCase, recentCases, selectCase } = useDashboard();
 
   const toggleFavorite = () => {
-    const newState = !isFavorite;
-    onFavoriteToggle(newState);
-    toast.success(newState ? "Added to favorites" : "Removed from favorites");
+    onFavoriteToggle();
+    toast.success(!isFavorite ? "Added to favorites" : "Removed from favorites");
   };
 
   return (

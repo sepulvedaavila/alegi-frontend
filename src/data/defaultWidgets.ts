@@ -22,6 +22,5 @@ export const defaultCenterWidgets: Widget[] = [
 
 export const defaultRightWidgets: Widget[] = [
   // Removed case comparison and custom reports, adjusting positions for remaining widgets
-  { id: 'whatIfAnalysis', type: 'whatIfAnalysis', title: 'What-If Analysis', enabled: true, size: 'large', position: 0 },
-  { id: 'legalResearchChatbot', type: 'legalResearchChatbot', title: 'Legal Research & Assistant', enabled: true, size: 'large', position: 1 },
+  { id: 'legalResearchChatbot', type: 'legalResearchChatbot', title: 'Legal Research & Assistant', enabled: true, size: 'large', position: 0 },
 ];

@@ -1,7 +1,6 @@
-
 // Form submission endpoints
-export const FORMSPREE_URL = "https://formspree.io/f/xkgjobbk";
-export const FORMSUBMIT_URL = "https://formsubmit.co/ajax/juanpmayoral@hotmail.com";
+export const FORMSPREE_URL = process.env.FORMSPREE_URL;
+export const FORMSUBMIT_URL = process.env.FORMSUBMIT_URL;
 
 // Get CORS headers function
 export function getCorsHeaders(requestOrigin: string | null) {
