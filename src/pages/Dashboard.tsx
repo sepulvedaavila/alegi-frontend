@@ -6,22 +6,42 @@ import DashboardHome from '@/components/dashboard/DashboardHome';
 import Settings from '@/components/dashboard/Settings';
 import CaseBriefForm from '@/components/cases/CaseBriefForm';
 import { useAuth } from '@/contexts/AuthContext';
-import { useFeedbackWidget } from '@/hooks/useFeedbackWidget';
 import { toast } from 'sonner';
 
 const Dashboard = () => {
   const { user, isLoading } = useAuth();
   const navigate = useNavigate();
   
-  // Load feedback widget for dashboard
-  useFeedbackWidget();
-
   useEffect(() => {
     if (!isLoading && !user) {
       toast.error('Please sign in to access the dashboard');
       navigate('/auth');
     }
   }, [user, isLoading, navigate]);
+
+  // Load feedback widget for dashboard
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/@betahuhn/feedback-js/dist/feedback-js.min.js';
+    script.defer = true;
+    script.setAttribute('data-feedback-opts', JSON.stringify({
+      endpoint: import.meta.env.VITE_ZAPIER_WEBHOOK,
+      id: 'dashboard',
+      emailField: true,
+      title: 'We want to know your feedback!',
+      forceShowButton: true
+    }));
+    
+    document.head.appendChild(script);
+
+    // Cleanup function to remove script when component unmounts
+    return () => {
+      const existingScript = document.querySelector('script[src*="feedback-js"]');
+      if (existingScript) {
+        existingScript.remove();
+      }
+    };
+  }, []);
 
   // Show loading state while checking authentication
   if (isLoading) {
