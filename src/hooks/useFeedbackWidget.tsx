@@ -15,10 +15,10 @@ export const useFeedbackWidget = () => {
         script.src = 'https://cdn.jsdelivr.net/npm/@betahuhn/feedback-js/dist/feedback-js.min.js';
         script.defer = true;
         script.setAttribute('data-feedback-opts', JSON.stringify({
-          endpoint: 'https://hooks.zapier.com/hooks/catch/23577600/ubku916/',
+          endpoint: import.meta.env.VITE_ZAPIER_WEBHOOK,
           id: 'dashboard',
           emailField: true,
-          title: 'Aelegi Feedback',
+          title: 'We want to know your feedback!',
           forceShowButton: true
         }));
         
