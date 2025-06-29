@@ -1,4 +1,3 @@
-
 import { useEffect } from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { DashboardProvider } from '@/contexts/DashboardContext';
@@ -7,11 +6,15 @@ import DashboardHome from '@/components/dashboard/DashboardHome';
 import Settings from '@/components/dashboard/Settings';
 import CaseBriefForm from '@/components/cases/CaseBriefForm';
 import { useAuth } from '@/contexts/AuthContext';
+import { useFeedbackWidget } from '@/hooks/useFeedbackWidget';
 import { toast } from 'sonner';
 
 const Dashboard = () => {
   const { user, isLoading } = useAuth();
   const navigate = useNavigate();
+  
+  // Load feedback widget for dashboard
+  useFeedbackWidget();
 
   useEffect(() => {
     if (!isLoading && !user) {
