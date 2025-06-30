@@ -30,11 +30,11 @@ const NavItems = () => {
 
   // Navigation items with paths to maintain routing structure
   const navItems = [
-    { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
-    { icon: Plus, label: 'New Case', path: '#', onClick: handleNewCase },
-    { icon: BarChart3, label: 'Case Comparison', path: '/dashboard/case-comparison' },
-    { icon: FileBarChart, label: 'Custom Reports', path: '/dashboard/custom-reports' },
-    { icon: Settings, label: 'Settings', path: '/dashboard/settings' },
+    { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard', isLink: true },
+    { icon: Plus, label: 'New Case', path: '#', onClick: handleNewCase, isLink: false },
+    { icon: BarChart3, label: 'Case Comparison', path: '/dashboard/case-comparison', isLink: true },
+    { icon: FileBarChart, label: 'Custom Reports', path: '/dashboard/custom-reports', isLink: true },
+    { icon: Settings, label: 'Settings', path: '/dashboard/settings', isLink: true },
   ];
 
   return (
@@ -72,18 +72,33 @@ const NavItems = () => {
                 )}
               </div>
             ) : (
-              <button
-                onClick={item.onClick || (() => {})}
-                className={cn(
-                  "flex w-full items-center px-2 py-2 text-sm font-medium rounded-md transition-colors",
-                  location.pathname === item.path 
-                    ? "bg-alegi-blue text-white" 
-                    : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-                )}
-              >
-                <item.icon size={20} className={cn("flex-shrink-0", sidebarCollapsed ? "mx-auto" : "mr-3")} />
-                {!sidebarCollapsed && <span>{item.label}</span>}
-              </button>
+              item.isLink ? (
+                <Link
+                  to={item.path}
+                  className={cn(
+                    "flex w-full items-center px-2 py-2 text-sm font-medium rounded-md transition-colors",
+                    location.pathname === item.path 
+                      ? "bg-alegi-blue text-white" 
+                      : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                  )}
+                >
+                  <item.icon size={20} className={cn("flex-shrink-0", sidebarCollapsed ? "mx-auto" : "mr-3")} />
+                  {!sidebarCollapsed && <span>{item.label}</span>}
+                </Link>
+              ) : (
+                <button
+                  onClick={item.onClick || (() => {})}
+                  className={cn(
+                    "flex w-full items-center px-2 py-2 text-sm font-medium rounded-md transition-colors",
+                    location.pathname === item.path 
+                      ? "bg-alegi-blue text-white" 
+                      : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                  )}
+                >
+                  <item.icon size={20} className={cn("flex-shrink-0", sidebarCollapsed ? "mx-auto" : "mr-3")} />
+                  {!sidebarCollapsed && <span>{item.label}</span>}
+                </button>
+              )
             )}
           </li>
         ))}
