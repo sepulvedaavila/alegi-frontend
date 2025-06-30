@@ -11,6 +11,7 @@ import FormProgress from './FormProgress';
 import { useCaseForm, CaseFormValues } from '@/hooks/useCaseForm';
 import { handleNextStep, handlePrevStep } from '@/utils/formStepUtils';
 import { submitCaseForm } from '@/services/caseSubmissionService';
+import { useDashboard } from '@/contexts/DashboardContext';
 
 // Re-export the CaseFormValues type for use in other files
 export type { CaseFormValues };
@@ -20,11 +21,14 @@ const CaseBriefForm = () => {
   const totalSteps = 3;
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
+  const { refreshCases } = useDashboard();
 
   const methods = useCaseForm();
 
   const onSubmit = async (data: CaseFormValues) => {
     await submitCaseForm(data, methods.reset, setCurrentStep, setIsSubmitting, navigate);
+    // Refresh the cases list after successful submission
+    await refreshCases();
   };
 
   const nextStep = async () => {

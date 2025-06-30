@@ -1,6 +1,6 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { CompleteCase } from './types';
+import { Case } from '@/types/dashboard';
 
 /**
  * Fetches a complete case with all related data
@@ -111,5 +111,83 @@ export const fetchCompleteCase = async (caseId: string): Promise<CompleteCase | 
   } catch (error) {
     console.error('Error fetching complete case:', error);
     return null;
+  }
+};
+
+/**
+ * Fetches all cases for a specific user
+ * @param userId The ID of the user whose cases to fetch
+ * @returns Array of cases for the user
+ */
+export const fetchUserCases = async (userId: string): Promise<Case[]> => {
+  try {
+    console.log('Fetching cases for user:', userId);
+    
+    const { data: casesData, error } = await supabase
+      .from('case_briefs')
+      .select(`
+        id,
+        case_name,
+        case_stage,
+        case_type,
+        case_number,
+        jurisdiction,
+        date_filed,
+        created_at,
+        updated_at
+      `)
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching user cases:', error);
+      return [];
+    }
+
+    if (!casesData) {
+      console.log('No cases found for user:', userId);
+      return [];
+    }
+
+    console.log(`Found ${casesData.length} cases for user:`, userId);
+
+    // Transform the database data to match the Case type used in the dashboard
+    const transformedCases: Case[] = casesData.map(caseData => {
+      // Determine status based on case_stage
+      let status: 'Active' | 'Pending' | 'Closed' = 'Pending';
+      if (caseData.case_stage === 'Filed' || caseData.case_stage === 'Discovery' || caseData.case_stage === 'Trial') {
+        status = 'Active';
+      } else if (caseData.case_stage === 'Settled' || caseData.case_stage === 'Dismissed' || caseData.case_stage === 'Closed') {
+        status = 'Closed';
+      }
+
+      // Generate a confidence score based on available data (this could be enhanced with AI analysis)
+      const confidence = Math.floor(Math.random() * 40) + 60; // Random between 60-100 for now
+
+      // Determine risk level based on case type and other factors
+      let risk: 'Low' | 'Medium' | 'High' = 'Medium';
+      if (caseData.case_type === 'Medical Malpractice' || caseData.case_type === 'Product Liability') {
+        risk = 'High';
+      } else if (caseData.case_type === 'Contract Dispute' || caseData.case_type === 'Employment') {
+        risk = 'Low';
+      }
+
+      const transformedCase = {
+        id: caseData.id,
+        title: caseData.case_name || `Case ${caseData.case_number || caseData.id}`,
+        status,
+        confidence,
+        date: caseData.date_filed || caseData.created_at.split('T')[0],
+        risk
+      };
+
+      console.log('Transformed case:', transformedCase);
+      return transformedCase;
+    });
+
+    return transformedCases;
+  } catch (error) {
+    console.error('Error fetching user cases:', error);
+    return [];
   }
 };

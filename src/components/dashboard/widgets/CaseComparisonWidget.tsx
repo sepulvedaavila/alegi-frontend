@@ -1,11 +1,13 @@
-
 import { useState } from 'react';
-import { Scale, ChevronDown, CheckSquare } from 'lucide-react';
+import { Scale, ChevronDown, CheckSquare, Plus } from 'lucide-react';
 import { useDashboard } from '@/contexts/DashboardContext';
+import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router-dom';
 
 const CaseComparisonWidget = () => {
-  const { recentCases, selectedCase, selectComparisonCase, comparisonCase } = useDashboard();
+  const { recentCases, selectedCase, selectComparisonCase, comparisonCase, isLoadingCases } = useDashboard();
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const navigate = useNavigate();
   
   // Filter out the currently selected case from comparison options
   const comparisonOptions = recentCases.filter(c => !selectedCase || c.id !== selectedCase.id);
@@ -22,7 +24,42 @@ const CaseComparisonWidget = () => {
   const handleClearComparison = () => {
     selectComparisonCase(null);
   };
-  
+
+  if (isLoadingCases) {
+    return (
+      <div className="text-center p-6">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-alegi-blue mx-auto mb-4"></div>
+        <p className="text-sm text-gray-600">Loading cases...</p>
+      </div>
+    );
+  }
+
+  if (recentCases.length === 0) {
+    return (
+      <div className="text-center p-6 border border-dashed rounded-md">
+        <Scale size={24} className="mx-auto text-gray-400 mb-2" />
+        <p className="text-sm text-gray-600 mb-4">No cases available for comparison</p>
+        <Button 
+          onClick={() => navigate('/dashboard/new-case')}
+          className="bg-alegi-blue text-white hover:bg-alegi-blue/90"
+          size="sm"
+        >
+          <Plus className="mr-2 h-4 w-4" />
+          Create First Case
+        </Button>
+      </div>
+    );
+  }
+
+  if (!selectedCase) {
+    return (
+      <div className="text-center p-6 border border-dashed rounded-md">
+        <Scale size={24} className="mx-auto text-gray-400 mb-2" />
+        <p className="text-sm text-gray-600">Please select a case first</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">

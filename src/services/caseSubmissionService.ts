@@ -1,4 +1,3 @@
-
 import { CaseFormValues } from '@/hooks/useCaseForm';
 import { submitCaseToSupabase } from '@/utils/case';
 import { toast } from 'sonner';
@@ -9,7 +8,7 @@ export const submitCaseForm = async (
   resetForm: () => void,
   setCurrentStep: (step: number) => void,
   setIsSubmitting: (isSubmitting: boolean) => void,
-  navigate: (path: string) => void
+  navigate?: (path: string) => void
 ) => {
   try {
     console.log('Submitting case form data:', data);
@@ -32,10 +31,14 @@ export const submitCaseForm = async (
         });
       }
       
-      // Reset the form and redirect to dashboard
+      // Reset the form
       resetForm();
       setCurrentStep(1);
-      navigate('/dashboard');
+      
+      // Only navigate if navigate function is provided
+      if (navigate) {
+        navigate('/dashboard');
+      }
     } else {
       // Show error toast with specific error message
       toast.error(`Failed to submit case brief: ${result.error || 'Unknown error'}`, {

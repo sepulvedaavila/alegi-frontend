@@ -1,11 +1,33 @@
-
-import { FileText, Star } from 'lucide-react';
+import { FileText, Star, Loader2 } from 'lucide-react';
 import { useDashboard } from '@/contexts/DashboardContext';
 import { cn } from '@/lib/utils';
 import FavoritesSection from './FavoritesSection';
 
 const CasesDropdown = () => {
-  const { recentCases, selectedCase, selectCase } = useDashboard();
+  const { recentCases, selectedCase, selectCase, isLoadingCases } = useDashboard();
+
+  if (isLoadingCases) {
+    return (
+      <div className="pl-10 space-y-1">
+        <div className="text-xs font-medium text-gray-500 mt-3 mb-1">RECENT CASES</div>
+        <div className="flex items-center py-1 text-sm text-gray-600">
+          <Loader2 size={14} className="mr-2 animate-spin" />
+          <span>Loading cases...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (recentCases.length === 0) {
+    return (
+      <div className="pl-10 space-y-1">
+        <div className="text-xs font-medium text-gray-500 mt-3 mb-1">RECENT CASES</div>
+        <div className="py-1 text-sm text-gray-500">
+          No cases found. Create your first case to get started.
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="pl-10 space-y-1">

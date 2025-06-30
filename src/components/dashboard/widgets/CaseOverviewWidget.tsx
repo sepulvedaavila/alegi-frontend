@@ -1,12 +1,38 @@
-
-import { FileText, Clock, AlertTriangle, CheckCircle } from 'lucide-react';
+import { FileText, Clock, AlertTriangle, CheckCircle, Plus } from 'lucide-react';
 import { useDashboard } from '@/contexts/DashboardContext';
+import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router-dom';
 
 const CaseOverviewWidget = () => {
-  const { selectedCase } = useDashboard();
+  const { selectedCase, isLoadingCases } = useDashboard();
+  const navigate = useNavigate();
+
+  if (isLoadingCases) {
+    return (
+      <div className="text-center py-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-alegi-blue mx-auto mb-4"></div>
+        <p className="text-gray-600">Loading case information...</p>
+      </div>
+    );
+  }
 
   if (!selectedCase) {
-    return <div className="text-center py-4">No case selected</div>;
+    return (
+      <div className="text-center py-8">
+        <FileText className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+        <h3 className="text-lg font-medium text-gray-900 mb-2">No Case Selected</h3>
+        <p className="text-gray-600 mb-4">
+          Select a case from the sidebar to view its details, or create a new case to get started.
+        </p>
+        <Button 
+          onClick={() => navigate('/dashboard/new-case')}
+          className="bg-alegi-blue text-white hover:bg-alegi-blue/90"
+        >
+          <Plus className="mr-2 h-4 w-4" />
+          Create New Case
+        </Button>
+      </div>
+    );
   }
 
   return (
@@ -59,25 +85,21 @@ const CaseOverviewWidget = () => {
                 <div className="flex items-center">
                   <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
                     <div 
-                      className={`h-2 rounded-full ${
-                        selectedCase.confidence > 80 ? 'bg-green-500' :
-                        selectedCase.confidence > 60 ? 'bg-yellow-500' :
-                        'bg-red-500'
-                      }`}
+                      className="bg-alegi-blue h-2 rounded-full" 
                       style={{ width: `${selectedCase.confidence}%` }}
-                    />
+                    ></div>
                   </div>
-                  <span className="text-xs">{selectedCase.confidence}%</span>
+                  <span className="text-xs text-gray-900">{selectedCase.confidence}%</span>
                 </div>
               </td>
-              <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-500">
+              <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-900">
                 {new Date(selectedCase.date).toLocaleDateString()}
               </td>
               <td className="px-3 py-2 whitespace-nowrap">
                 <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                  selectedCase.risk === 'Low' ? 'bg-green-100 text-green-800' :
+                  selectedCase.risk === 'High' ? 'bg-red-100 text-red-800' :
                   selectedCase.risk === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
-                  'bg-red-100 text-red-800'
+                  'bg-green-100 text-green-800'
                 }`}>
                   {selectedCase.risk === 'High' && <AlertTriangle size={12} className="mr-1" />}
                   {selectedCase.risk}

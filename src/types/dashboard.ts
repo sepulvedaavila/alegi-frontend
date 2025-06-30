@@ -1,4 +1,3 @@
-
 // Types for our widget system
 export type WidgetType = 
   // Center column widgets
@@ -54,6 +53,7 @@ export type DashboardContextType = {
   recentCases: Case[];
   comparisonCase: Case | null;
   favoriteCases: Case[];
+  isLoadingCases: boolean;
   toggleSidebar: () => void;
   moveWidget: (widgetId: string, sourceColumn: ColumnId, destinationColumn: ColumnId, newPosition: number) => void;
   resizeWidget: (widgetId: string, columnId: ColumnId, newSize: 'small' | 'medium' | 'large') => void;
@@ -61,4 +61,5 @@ export type DashboardContextType = {
   selectComparisonCase: (caseId: string | null) => void;
   toggleFavorite: (caseId: string) => void;
   isFavorite: (caseId: string) => boolean;
+  refreshCases: () => Promise<void>;
 };

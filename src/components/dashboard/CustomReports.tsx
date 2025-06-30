@@ -14,11 +14,13 @@ import {
   Gavel,
   FileBarChart,
   PieChart,
-  Target
+  Target,
+  Plus
 } from 'lucide-react';
 import { useDashboard } from '@/contexts/DashboardContext';
-import { mockCases } from '@/data/mockCases';
 import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router-dom';
 
 interface ReportData {
   id: string;
@@ -30,80 +32,56 @@ interface ReportData {
 }
 
 const CustomReports = () => {
-  const { selectedCase, recentCases } = useDashboard();
+  const { selectedCase, recentCases, isLoadingCases } = useDashboard();
   const [isGenerating, setIsGenerating] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   // Enhanced case data with more details for reports
-  const enhancedCases = [
-    {
-      ...mockCases[0],
-      caseType: 'Medical Negligence',
-      plaintiff: 'Sarah Johnson',
-      defendant: 'MedTech Inc.',
-      filedDate: '2023-08-15',
-      estimatedValue: 1200000,
-      settlementAmount: 850000,
-      resolutionTime: 14,
-      resolutionType: 'Settlement',
-      judge: 'Maria Rodriguez',
-      jurisdiction: 'Northern District Court',
-      riskFactors: ['Expert testimony', 'Documentary evidence', 'Witness statements'],
-      keyEvidence: ['Medical records', 'Expert witness report', 'Hospital policies'],
-      outcome: 'Settled',
-      confidence: 82
-    },
-    {
-      ...mockCases[1],
-      caseType: 'Employment Discrimination',
-      plaintiff: 'Michael Roberts',
-      defendant: 'TechCorp Solutions',
-      filedDate: '2023-07-28',
-      estimatedValue: 750000,
-      settlementAmount: 0,
-      resolutionTime: 0,
-      resolutionType: 'Pending',
-      judge: 'David Chen',
-      jurisdiction: 'Southern District Court',
-      riskFactors: ['Limited evidence', 'Conflicting testimony'],
-      keyEvidence: ['Employment records', 'Witness statements'],
-      outcome: 'Pending',
-      confidence: 64
-    },
-    {
-      ...mockCases[2],
-      caseType: 'Product Liability',
-      plaintiff: 'Jennifer Peterson',
-      defendant: 'Allied Health Systems',
-      filedDate: '2023-06-12',
-      estimatedValue: 950000,
-      settlementAmount: 920000,
-      resolutionTime: 8,
-      resolutionType: 'Settlement',
-      judge: 'Robert Williams',
-      jurisdiction: 'Eastern District Court',
-      riskFactors: ['Strong evidence', 'Clear liability'],
-      keyEvidence: ['Product documentation', 'Expert analysis', 'Medical reports'],
-      outcome: 'Settled',
-      confidence: 91
-    },
-    {
-      ...mockCases[3],
-      caseType: 'Medical Malpractice',
-      plaintiff: 'Thomas Williams',
-      defendant: 'City General Hospital',
-      filedDate: '2023-04-30',
-      estimatedValue: 1800000,
-      settlementAmount: 0,
-      resolutionTime: 0,
-      resolutionType: 'Active',
-      judge: 'Lisa Thompson',
-      jurisdiction: 'Western District Court',
-      riskFactors: ['Complex medical issues', 'Multiple defendants'],
-      keyEvidence: ['Medical records', 'Expert testimony', 'Hospital protocols'],
-      outcome: 'Active',
-      confidence: 77
-    }
-  ];
+  const enhancedCases = recentCases.map(caseItem => ({
+    ...caseItem,
+    caseType: 'Legal Case', // This could be enhanced with actual case type from database
+    plaintiff: 'Plaintiff', // This could be enhanced with actual plaintiff data
+    defendant: 'Defendant', // This could be enhanced with actual defendant data
+    filedDate: caseItem.date,
+    estimatedValue: Math.floor(Math.random() * 1000000) + 100000, // Mock data
+    settlementAmount: caseItem.status === 'Closed' ? Math.floor(Math.random() * 800000) + 50000 : 0,
+    resolutionTime: caseItem.status === 'Closed' ? Math.floor(Math.random() * 24) + 6 : 0,
+    resolutionType: caseItem.status === 'Closed' ? 'Settlement' : 'Pending',
+    judge: 'Judge', // This could be enhanced with actual judge data
+    jurisdiction: 'Jurisdiction', // This could be enhanced with actual jurisdiction data
+    riskFactors: ['Risk factor 1', 'Risk factor 2'], // Mock data
+    keyEvidence: ['Evidence 1', 'Evidence 2'], // Mock data
+    outcome: caseItem.status === 'Closed' ? 'Settled' : caseItem.status,
+    confidence: caseItem.confidence
+  }));
+
+  if (isLoadingCases) {
+    return (
+      <div className="text-center p-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-alegi-blue mx-auto mb-4"></div>
+        <p className="text-gray-600">Loading cases for reports...</p>
+      </div>
+    );
+  }
+
+  if (recentCases.length === 0) {
+    return (
+      <div className="text-center p-8">
+        <FileBarChart className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+        <h3 className="text-lg font-medium text-gray-900 mb-2">No Cases Available</h3>
+        <p className="text-gray-600 mb-4">
+          Create your first case to generate custom reports and analytics.
+        </p>
+        <Button 
+          onClick={() => navigate('/dashboard/new-case')}
+          className="bg-alegi-blue text-white hover:bg-alegi-blue/90"
+        >
+          <Plus className="mr-2 h-4 w-4" />
+          Create First Case
+        </Button>
+      </div>
+    );
+  }
 
   // Report 1: Case Performance Summary
   const casePerformanceReport: ReportData = {

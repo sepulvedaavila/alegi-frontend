@@ -1,19 +1,51 @@
-
-import React, { createContext, useState, useCallback, ReactNode } from 'react';
+import React, { createContext, useState, useCallback, ReactNode, useEffect } from 'react';
 import { DashboardContextType, Case, ColumnId, Widget } from '@/types/dashboard';
-import { mockCases } from '@/data/mockCases';
 import { defaultCenterWidgets, defaultRightWidgets } from '@/data/defaultWidgets';
+import { fetchUserCases } from '@/utils/case/caseFetching';
+import { useAuth } from './AuthContext';
 
 export const DashboardContext = createContext<DashboardContextType | undefined>(undefined);
 
 export const DashboardProvider = ({ children }: { children: ReactNode }) => {
+  const { user } = useAuth();
   const [centerWidgets, setCenterWidgets] = useState<Widget[]>(defaultCenterWidgets);
   const [rightWidgets, setRightWidgets] = useState<Widget[]>(defaultRightWidgets);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [recentCases] = useState<Case[]>(mockCases);
-  const [selectedCase, setSelectedCase] = useState<Case | null>(mockCases[0]);
+  const [recentCases, setRecentCases] = useState<Case[]>([]);
+  const [selectedCase, setSelectedCase] = useState<Case | null>(null);
   const [comparisonCase, setComparisonCase] = useState<Case | null>(null);
   const [favoriteCases, setFavoriteCases] = useState<Case[]>([]);
+  const [isLoadingCases, setIsLoadingCases] = useState(false);
+
+  // Fetch user cases when user changes
+  useEffect(() => {
+    const loadUserCases = async () => {
+      if (!user) {
+        setRecentCases([]);
+        setSelectedCase(null);
+        setComparisonCase(null);
+        return;
+      }
+
+      setIsLoadingCases(true);
+      try {
+        const userCases = await fetchUserCases(user.id);
+        setRecentCases(userCases);
+        
+        // Set the first case as selected if available
+        if (userCases.length > 0 && !selectedCase) {
+          setSelectedCase(userCases[0]);
+        }
+      } catch (error) {
+        console.error('Error loading user cases:', error);
+        setRecentCases([]);
+      } finally {
+        setIsLoadingCases(false);
+      }
+    };
+
+    loadUserCases();
+  }, [user]);
 
   const toggleSidebar = useCallback(() => {
     setSidebarCollapsed(prev => !prev);
@@ -130,6 +162,30 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
     return favoriteCases.some(c => c.id === caseId);
   }, [favoriteCases]);
 
+  const refreshCases = useCallback(async () => {
+    if (!user) return;
+    
+    setIsLoadingCases(true);
+    try {
+      const userCases = await fetchUserCases(user.id);
+      setRecentCases(userCases);
+      
+      // Update selected case if it no longer exists in the refreshed list
+      if (selectedCase && !userCases.find(c => c.id === selectedCase.id)) {
+        setSelectedCase(userCases.length > 0 ? userCases[0] : null);
+      }
+      
+      // Update comparison case if it no longer exists
+      if (comparisonCase && !userCases.find(c => c.id === comparisonCase.id)) {
+        setComparisonCase(null);
+      }
+    } catch (error) {
+      console.error('Error refreshing cases:', error);
+    } finally {
+      setIsLoadingCases(false);
+    }
+  }, [user, selectedCase, comparisonCase]);
+
   return (
     <DashboardContext.Provider value={{
       centerWidgets,
@@ -139,13 +195,15 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
       recentCases,
       comparisonCase,
       favoriteCases,
+      isLoadingCases,
       toggleSidebar,
       moveWidget,
       resizeWidget,
       selectCase,
       selectComparisonCase,
       toggleFavorite,
-      isFavorite
+      isFavorite,
+      refreshCases
     }}>
       {children}
     </DashboardContext.Provider>

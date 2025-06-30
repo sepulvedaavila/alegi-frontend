@@ -188,7 +188,7 @@ export const exportDashboardToCSV = (data: CaseData[] | CaseData | null | undefi
     csvContent += row + '\n';
   } else {
     // Add a placeholder row if no data
-    csvContent += "\"No data\",\"No data\",\"No data\",\"No data\",\"No data\",\"" + new Date().toISOString().split('T')[0] + "\"\n";
+    csvContent += "\"No cases available\",\"No cases available\",\"No cases available\",\"No cases available\",\"No cases available\",\"" + new Date().toISOString().split('T')[0] + "\"\n";
   }
   
   // Create and download the CSV file

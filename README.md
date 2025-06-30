@@ -1,116 +1,95 @@
 # Alegi Frontend
 
-## Project Overview
-
-This is a modern React application built with Vite, TypeScript, and shadcn-ui components.
+A modern legal case management platform with AI-powered analytics and insights.
 
 ## Features
 
-### Custom Reports
-The platform now includes a comprehensive Custom Reports system that allows users to generate three different types of reports from their case data:
+### User-Specific Case Management
+- **Personal Case Dashboard**: Each user can only see and manage their own uploaded cases
+- **Real-time Case Loading**: Cases are fetched from the database and displayed in real-time
+- **Case Privacy**: Cases are automatically filtered by user ID, ensuring data privacy
+- **Dynamic Case Updates**: New cases are automatically added to the dashboard after creation
+- **Case Status Tracking**: Automatic status determination based on case stage (Active, Pending, Closed)
+- **Risk Assessment**: AI-powered risk scoring based on case type and factors
 
-1. **Case Performance Summary (PDF)**
-   - Total cases, active cases, and settled cases
-   - Settlement values and resolution times
-   - Cases by type and outcome analysis
-   - Average confidence scores
+### Dashboard Features
+- **Interactive Case Selection**: Click on cases in the sidebar to view detailed information
+- **Case Comparison**: Compare multiple cases side-by-side
+- **Favorites System**: Mark important cases as favorites for quick access
+- **Custom Reports**: Generate detailed reports based on your case data
+- **Real-time Analytics**: View confidence scores, risk assessments, and outcome predictions
 
-2. **Financial Analysis Report (Excel)**
-   - Total estimated and settled values
-   - Average settlement amounts and settlement rates
-   - Financial breakdown by case type
-   - Monthly settlement tracking
+### Case Creation
+- **Multi-step Form**: Guided case creation process with validation
+- **File Upload Support**: Upload evidence and supporting documents
+- **Automatic Case Enrichment**: AI-powered case analysis and insights
+- **Instant Dashboard Integration**: New cases appear immediately in your dashboard
 
-3. **Risk Assessment Report (CSV)**
-   - Risk analysis by case type, judge, and jurisdiction
-   - Confidence score distribution
-   - Common risk factors identification
-   - Judge performance metrics
+## Getting Started
 
-Each report provides different insights and can be downloaded in various formats (PDF, Excel, CSV) for further analysis and presentation.
+1. **Installation**
+   ```bash
+   npm install
+   ```
 
-## Technologies Used
+2. **Environment Setup**
+   Create a `.env` file with your Supabase credentials:
+   ```
+   VITE_SUPABASE_URL=your_supabase_url
+   VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+   ```
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-- Supabase
-- React Query
-- React Router DOM
+3. **Development**
+   ```bash
+   npm run dev
+   ```
 
-## Local Development
+4. **Building for Production**
+   ```bash
+   npm run build
+   ```
 
-### Prerequisites
+## Architecture
 
-- Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### User Authentication
+- Supabase Auth integration
+- Automatic user session management
+- Protected routes and components
 
-### Setup Instructions
+### Case Management
+- User-specific case storage in Supabase
+- Real-time case synchronization
+- Automatic case filtering by user ID
 
-```sh
-# Step 1: Clone the repository
-git clone git@github.com:sepulvedaavila/alegi-frontend.git
+### Dashboard Context
+- Centralized state management for dashboard data
+- Real-time case updates
+- Loading states and error handling
 
-# Step 2: Navigate to the project directory
-cd alegi-frontend
+## Database Schema
 
-# Step 3: Install the necessary dependencies
-npm i
+The application uses the following key tables:
+- `case_briefs`: Main case information with user_id for privacy
+- `case_plaintiffs`: Plaintiff information linked to cases
+- `case_defendants`: Defendant information linked to cases
+- `case_evidence`: Evidence items linked to cases
+- `case_documents`: Supporting documents linked to cases
 
-# Step 4: Start the development server
-npm run dev
-```
+## Security Features
 
-The development server will start at `http://localhost:8080` with hot-reloading enabled.
-
-## Deployment
-
-### Deploying to Vercel
-
-1. **Prerequisites**
-   - A Vercel account
-   - Your code pushed to a Git repository (GitHub, GitLab, or Bitbucket)
-
-2. **Deployment Steps**
-   - Go to [vercel.com](https://vercel.com)
-   - Click "New Project"
-   - Import your repository
-   - Configure your environment variables (especially Supabase credentials)
-   - Deploy
-
-3. **Environment Variables**
-   Make sure to set up the following environment variables in your Vercel project:
-   - `VITE_SUPABASE_URL`
-   - `VITE_SUPABASE_ANON_KEY`
-   - Any other environment variables your application needs
-
-### Build Commands
-
-- Development build: `npm run build:dev`
-- Production build: `npm run build`
-- Preview build: `npm run preview`
-
-## Project Structure
-
-The project follows a standard Vite + React structure with TypeScript support. Key directories include:
-
-- `/src` - Source code
-- `/public` - Static assets
-- `/supabase` - Supabase configuration and types
+- **Row Level Security (RLS)**: Database policies ensure users can only access their own cases
+- **User Authentication**: Required for all case operations
+- **Data Privacy**: Cases are automatically filtered by user ID
+- **Secure File Uploads**: Files are stored securely with proper access controls
 
 ## Contributing
 
-1. Create a new branch for your feature
-2. Make your changes
-3. Submit a pull request
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests if applicable
+5. Submit a pull request
 
 ## License
 
-Copyright (c) 2024 Alegi. All Rights Reserved.
-
-This software and associated documentation files (the "Software") are proprietary and confidential. The Software is protected by copyright laws and international copyright treaties, as well as other intellectual property laws and treaties.
-
-Unauthorized copying, distribution, modification, public display, or public performance of the Software is strictly prohibited. No part of this Software may be reproduced, distributed, or transmitted in any form or by any means, including photocopying, recording, or other electronic or mechanical methods, without the prior written permission of Alegi.
-
-For licensing inquiries, please contact [your contact information].
+This project is licensed under the MIT License.
