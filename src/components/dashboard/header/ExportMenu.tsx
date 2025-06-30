@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from 'react';
 import { Download, ChevronDown, FileText } from 'lucide-react';
 import { toast } from 'sonner';
@@ -13,7 +12,7 @@ const ExportMenu = ({ dashboardRef }: ExportMenuProps) => {
   const [isExporting, setIsExporting] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
   const exportMenuRef = useRef<HTMLDivElement>(null);
-  const { selectedCase, recentCases } = useDashboard();
+  const { recentCases } = useDashboard();
 
   const handleExportToPDF = async () => {
     if (!dashboardRef.current) return;
@@ -21,7 +20,7 @@ const ExportMenu = ({ dashboardRef }: ExportMenuProps) => {
     setIsExporting(true);
     try {
       toast.loading('Exporting dashboard to PDF...');
-      await exportDashboardToPDF(dashboardRef.current, selectedCase?.title || 'Dashboard');
+      await exportDashboardToPDF(dashboardRef.current, 'Dashboard');
       toast.success('Dashboard exported to PDF successfully');
     } catch (error) {
       console.error('Error exporting dashboard:', error);
@@ -35,9 +34,8 @@ const ExportMenu = ({ dashboardRef }: ExportMenuProps) => {
   const handleExportToCSV = () => {
     setIsExporting(true);
     try {
-      // Export case data to CSV
-      const caseData = selectedCase ? [selectedCase] : recentCases;
-      exportDashboardToCSV(caseData, selectedCase?.title || 'Dashboard');
+      // Export all case data to CSV
+      exportDashboardToCSV(recentCases, 'Dashboard');
       toast.success('Dashboard exported to CSV successfully');
     } catch (error) {
       console.error('Error exporting dashboard to CSV:', error);

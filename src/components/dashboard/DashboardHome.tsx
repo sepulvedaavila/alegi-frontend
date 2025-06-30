@@ -9,20 +9,12 @@ import ExportMenu from './header/ExportMenu';
 import DashboardContent from './content/DashboardContent';
 import NewCaseModal from '@/components/cases/NewCaseModal';
 import { useDashboard } from '@/contexts/DashboardContext';
-import { mockCases } from '@/data/mockCases';
 
 const DashboardHome = () => {
-  const { selectedCase, toggleFavorite, isFavorite } = useDashboard();
+  const { recentCases, toggleFavorite, isFavorite, isLoadingCases } = useDashboard();
   const [isNewCaseModalOpen, setIsNewCaseModalOpen] = useState(false);
   const dashboardRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
-
-  // Handle favorite toggle
-  const handleFavoriteToggle = () => {
-    if (selectedCase) {
-      toggleFavorite(selectedCase.id);
-    }
-  };
 
   // Open the new case modal
   const handleNewCase = () => {
@@ -34,13 +26,13 @@ const DashboardHome = () => {
     navigate(`/dashboard/case/${caseId}`);
   };
 
-  // Calculate dashboard statistics
-  const totalCases = mockCases.length;
-  const activeCases = mockCases.filter(c => c.status === 'Active').length;
-  const pendingCases = mockCases.filter(c => c.status === 'Pending').length;
-  const closedCases = mockCases.filter(c => c.status === 'Closed').length;
-  const averageConfidence = Math.round(mockCases.reduce((sum, c) => sum + c.confidence, 0) / totalCases);
-  const highRiskCases = mockCases.filter(c => c.risk === 'High').length;
+  // Calculate dashboard statistics from real user cases
+  const totalCases = recentCases.length;
+  const activeCases = recentCases.filter(c => c.status === 'Active').length;
+  const pendingCases = recentCases.filter(c => c.status === 'Pending').length;
+  const closedCases = recentCases.filter(c => c.status === 'Closed').length;
+  const averageConfidence = totalCases > 0 ? Math.round(recentCases.reduce((sum, c) => sum + c.confidence, 0) / totalCases) : 0;
+  const highRiskCases = recentCases.filter(c => c.risk === 'High').length;
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -66,8 +58,8 @@ const DashboardHome = () => {
         <div className="max-w-[1920px] mx-auto px-4 sm:px-6 md:px-8">
           <div className="flex items-center justify-between mb-8">
             <DashboardHeader 
-              isFavorite={selectedCase ? isFavorite(selectedCase.id) : false} 
-              onFavoriteToggle={handleFavoriteToggle} 
+              isFavorite={false} 
+              onFavoriteToggle={() => {}} 
             />
             <div className="flex items-center gap-3">
               <Button
@@ -151,51 +143,66 @@ const DashboardHome = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    {mockCases.slice(0, 5).map((caseItem) => (
-                      <div 
-                        key={caseItem.id}
-                        className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
-                        onClick={() => handleCaseClick(caseItem.id)}
-                      >
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-3">
-                            <div>
-                              <h4 className="font-medium text-gray-900">{caseItem.title}</h4>
-                              <p className="text-sm text-gray-500">ID: {caseItem.id}</p>
+                  {isLoadingCases ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="text-gray-500">Loading cases...</div>
+                    </div>
+                  ) : recentCases.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-8">
+                      <FileText className="h-12 w-12 text-gray-300 mb-4" />
+                      <p className="text-gray-500 mb-4">No cases created yet</p>
+                      <Button onClick={handleNewCase} className="bg-alegi-blue hover:bg-blue-700 text-white">
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        Create Your First Case
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {recentCases.slice(0, 3).map((caseItem) => (
+                        <div 
+                          key={caseItem.id}
+                          className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                          onClick={() => handleCaseClick(caseItem.id)}
+                        >
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-3">
+                              <div>
+                                <h4 className="font-medium text-gray-900">{caseItem.title}</h4>
+                                <p className="text-sm text-gray-500">ID: {caseItem.id}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center space-x-4 mt-2">
+                              <Badge className={getStatusColor(caseItem.status)}>
+                                {caseItem.status}
+                              </Badge>
+                              <Badge className={getRiskColor(caseItem.risk)}>
+                                {caseItem.risk} Risk
+                              </Badge>
+                              <span className="text-sm text-gray-500">
+                                {caseItem.confidence}% confidence
+                              </span>
                             </div>
                           </div>
-                          <div className="flex items-center space-x-4 mt-2">
-                            <Badge className={getStatusColor(caseItem.status)}>
-                              {caseItem.status}
-                            </Badge>
-                            <Badge className={getRiskColor(caseItem.risk)}>
-                              {caseItem.risk} Risk
-                            </Badge>
-                            <span className="text-sm text-gray-500">
-                              {caseItem.confidence}% confidence
-                            </span>
+                          <div className="flex items-center space-x-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleFavorite(caseItem.id);
+                              }}
+                              className={isFavorite(caseItem.id) ? 'text-yellow-500' : 'text-gray-400'}
+                            >
+                              ★
+                            </Button>
+                            <Button variant="outline" size="sm">
+                              View Details
+                            </Button>
                           </div>
                         </div>
-                        <div className="flex items-center space-x-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleFavorite(caseItem.id);
-                            }}
-                            className={isFavorite(caseItem.id) ? 'text-yellow-500' : 'text-gray-400'}
-                          >
-                            ★
-                          </Button>
-                          <Button variant="outline" size="sm">
-                            View Details
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>

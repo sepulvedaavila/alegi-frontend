@@ -12,7 +12,6 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
   const [rightWidgets, setRightWidgets] = useState<Widget[]>(defaultRightWidgets);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [recentCases, setRecentCases] = useState<Case[]>([]);
-  const [selectedCase, setSelectedCase] = useState<Case | null>(null);
   const [comparisonCase, setComparisonCase] = useState<Case | null>(null);
   const [favoriteCases, setFavoriteCases] = useState<Case[]>([]);
   const [isLoadingCases, setIsLoadingCases] = useState(false);
@@ -22,7 +21,6 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
     const loadUserCases = async () => {
       if (!user) {
         setRecentCases([]);
-        setSelectedCase(null);
         setComparisonCase(null);
         return;
       }
@@ -31,11 +29,6 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
       try {
         const userCases = await fetchUserCases(user.id);
         setRecentCases(userCases);
-        
-        // Set the first case as selected if available
-        if (userCases.length > 0 && !selectedCase) {
-          setSelectedCase(userCases[0]);
-        }
       } catch (error) {
         console.error('Error loading user cases:', error);
         setRecentCases([]);
@@ -51,17 +44,6 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
     setSidebarCollapsed(prev => !prev);
   }, []);
 
-  const selectCase = useCallback((caseId: string) => {
-    const found = recentCases.find(c => c.id === caseId);
-    if (found) {
-      setSelectedCase(found);
-      // Reset comparison case if it's the same as the selected case
-      if (comparisonCase && comparisonCase.id === caseId) {
-        setComparisonCase(null);
-      }
-    }
-  }, [recentCases, comparisonCase]);
-
   const selectComparisonCase = useCallback((caseId: string | null) => {
     if (!caseId) {
       setComparisonCase(null);
@@ -69,10 +51,10 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
     }
     
     const found = recentCases.find(c => c.id === caseId);
-    if (found && (!selectedCase || found.id !== selectedCase.id)) {
+    if (found) {
       setComparisonCase(found);
     }
-  }, [recentCases, selectedCase]);
+  }, [recentCases]);
 
   const moveWidget = useCallback((
     widgetId: string, 
@@ -127,7 +109,6 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [centerWidgets, rightWidgets]);
 
-
   const resizeWidget = useCallback((widgetId: string, columnId: ColumnId, newSize: 'small' | 'medium' | 'large') => {
     if (columnId === 'centerColumn') {
       setCenterWidgets(widgets => 
@@ -170,11 +151,6 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
       const userCases = await fetchUserCases(user.id);
       setRecentCases(userCases);
       
-      // Update selected case if it no longer exists in the refreshed list
-      if (selectedCase && !userCases.find(c => c.id === selectedCase.id)) {
-        setSelectedCase(userCases.length > 0 ? userCases[0] : null);
-      }
-      
       // Update comparison case if it no longer exists
       if (comparisonCase && !userCases.find(c => c.id === comparisonCase.id)) {
         setComparisonCase(null);
@@ -184,14 +160,13 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
     } finally {
       setIsLoadingCases(false);
     }
-  }, [user, selectedCase, comparisonCase]);
+  }, [user, comparisonCase]);
 
   return (
     <DashboardContext.Provider value={{
       centerWidgets,
       rightWidgets,
       sidebarCollapsed,
-      selectedCase,
       recentCases,
       comparisonCase,
       favoriteCases,
@@ -199,7 +174,6 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
       toggleSidebar,
       moveWidget,
       resizeWidget,
-      selectCase,
       selectComparisonCase,
       toggleFavorite,
       isFavorite,

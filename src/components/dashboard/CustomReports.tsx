@@ -32,7 +32,7 @@ interface ReportData {
 }
 
 const CustomReports = () => {
-  const { selectedCase, recentCases, isLoadingCases } = useDashboard();
+  const { recentCases, isLoadingCases } = useDashboard();
   const [isGenerating, setIsGenerating] = useState<string | null>(null);
   const navigate = useNavigate();
 
@@ -427,4 +427,4 @@ const generateReportPreview = (report: ReportData) => {
   }
 };
 
-export default CustomReports; 
+export default CustomReports;

@@ -6,15 +6,45 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useDashboard } from '@/contexts/DashboardContext';
-import { mockCases } from '@/data/mockCases';
+import { fetchCompleteCase } from '@/utils/case/caseFetching';
+import { useState, useEffect } from 'react';
+import { CompleteCase } from '@/utils/case/types';
 
 const CaseView = () => {
   const { caseId } = useParams<{ caseId: string }>();
   const navigate = useNavigate();
-  const { selectedCase, toggleFavorite, isFavorite } = useDashboard();
+  const { toggleFavorite, isFavorite } = useDashboard();
+  const [caseData, setCaseData] = useState<CompleteCase | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Find the case from mock data (in real app, this would come from API)
-  const caseData = mockCases.find(c => c.id === caseId) || selectedCase;
+  useEffect(() => {
+    const loadCase = async () => {
+      if (!caseId) return;
+      
+      setIsLoading(true);
+      try {
+        const completeCase = await fetchCompleteCase(caseId);
+        setCaseData(completeCase);
+      } catch (error) {
+        console.error('Error loading case:', error);
+        setCaseData(null);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadCase();
+  }, [caseId]);
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center">
+          <div className="text-xl font-semibold">Loading case...</div>
+        </div>
+      </div>
+    );
+  }
 
   if (!caseData) {
     return (
@@ -30,6 +60,24 @@ const CaseView = () => {
       </div>
     );
   }
+
+  // Transform the complete case data to match the expected format
+  const transformedCase = {
+    id: caseData.caseDetails.id,
+    title: caseData.caseDetails.case_name || `Case ${caseData.caseDetails.case_number || caseData.caseDetails.id}`,
+    status: caseData.caseDetails.case_stage === 'Settled' || caseData.caseDetails.case_stage === 'Dismissed' || caseData.caseDetails.case_stage === 'Closed' 
+      ? 'Closed' as const
+      : caseData.caseDetails.case_stage === 'Filed' || caseData.caseDetails.case_stage === 'Discovery' || caseData.caseDetails.case_stage === 'Trial'
+      ? 'Active' as const
+      : 'Pending' as const,
+    confidence: Math.floor(Math.random() * 40) + 60, // Random between 60-100 for now
+    date: caseData.caseDetails.date_filed || caseData.caseDetails.created_at.split('T')[0],
+    risk: (caseData.caseDetails.case_type === 'Medical Malpractice' || caseData.caseDetails.case_type === 'Product Liability') 
+      ? 'High' as const
+      : (caseData.caseDetails.case_type === 'Contract Dispute' || caseData.caseDetails.case_type === 'Employment')
+      ? 'Low' as const
+      : 'Medium' as const
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -65,21 +113,21 @@ const CaseView = () => {
                   <ArrowLeft className="h-5 w-5" />
                 </Button>
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-900">{caseData.title}</h1>
-                  <p className="text-gray-600">Case ID: {caseData.id}</p>
+                  <h1 className="text-3xl font-bold text-gray-900">{transformedCase.title}</h1>
+                  <p className="text-gray-600">Case ID: {transformedCase.id}</p>
                 </div>
               </div>
               <div className="flex items-center space-x-3">
-                <Badge className={getStatusColor(caseData.status)}>
-                  {caseData.status}
+                <Badge className={getStatusColor(transformedCase.status)}>
+                  {transformedCase.status}
                 </Badge>
-                <Badge className={getRiskColor(caseData.risk)}>
-                  {caseData.risk} Risk
+                <Badge className={getRiskColor(transformedCase.risk)}>
+                  {transformedCase.risk} Risk
                 </Badge>
                 <Button
                   variant="ghost"
-                  onClick={() => toggleFavorite(caseData.id)}
-                  className={isFavorite(caseData.id) ? 'text-yellow-500' : 'text-gray-400'}
+                  onClick={() => toggleFavorite(transformedCase.id)}
+                  className={isFavorite(transformedCase.id) ? 'text-yellow-500' : 'text-gray-400'}
                 >
                   ★
                 </Button>
@@ -112,7 +160,7 @@ const CaseView = () => {
                     <CardContent>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         <div className="text-center">
-                          <div className="text-2xl font-bold text-blue-600">{caseData.confidence}%</div>
+                          <div className="text-2xl font-bold text-blue-600">{transformedCase.confidence}%</div>
                           <div className="text-sm text-gray-600">Confidence</div>
                         </div>
                         <div className="text-center">
@@ -124,7 +172,7 @@ const CaseView = () => {
                           <div className="text-sm text-gray-600">Days Active</div>
                         </div>
                         <div className="text-center">
-                          <div className="text-2xl font-bold text-orange-600">12</div>
+                          <div className="text-2xl font-bold text-orange-600">{caseData.documents.length}</div>
                           <div className="text-sm text-gray-600">Documents</div>
                         </div>
                       </div>
@@ -140,9 +188,9 @@ const CaseView = () => {
                         <div>
                           <div className="flex justify-between text-sm mb-2">
                             <span>Overall Progress</span>
-                            <span>{caseData.confidence}%</span>
+                            <span>{transformedCase.confidence}%</span>
                           </div>
-                          <Progress value={caseData.confidence} className="h-2" />
+                          <Progress value={transformedCase.confidence} className="h-2" />
                         </div>
                         <div className="grid grid-cols-2 gap-4 text-sm">
                           <div className="flex items-center">
@@ -200,7 +248,7 @@ const CaseView = () => {
                     <CardContent className="space-y-3 text-sm">
                       <div className="flex justify-between">
                         <span className="text-gray-600">Filed Date:</span>
-                        <span>{caseData.date}</span>
+                        <span>{transformedCase.date}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600">Court:</span>
@@ -233,7 +281,7 @@ const CaseView = () => {
                       <div className="flex-1">
                         <div className="flex items-center justify-between">
                           <h4 className="font-medium">Case Filed</h4>
-                          <span className="text-sm text-gray-500">{caseData.date}</span>
+                          <span className="text-sm text-gray-500">{transformedCase.date}</span>
                         </div>
                         <p className="text-sm text-gray-600 mt-1">Initial complaint filed with the court</p>
                       </div>
@@ -286,7 +334,7 @@ const CaseView = () => {
                         <FileText className="h-5 w-5 text-blue-500" />
                         <div>
                           <div className="font-medium">Complaint.pdf</div>
-                          <div className="text-sm text-gray-500">Filed on {caseData.date}</div>
+                          <div className="text-sm text-gray-500">Filed on {transformedCase.date}</div>
                         </div>
                       </div>
                       <Button variant="outline" size="sm">View</Button>
@@ -325,7 +373,7 @@ const CaseView = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="text-center">
-                      <div className="text-4xl font-bold text-blue-600 mb-2">{caseData.confidence}%</div>
+                      <div className="text-4xl font-bold text-blue-600 mb-2">{transformedCase.confidence}%</div>
                       <div className="text-sm text-gray-600">Likelihood of Success</div>
                       <div className="mt-4 p-3 bg-blue-50 rounded-lg">
                         <div className="text-sm font-medium text-blue-800">Recommended Strategy</div>

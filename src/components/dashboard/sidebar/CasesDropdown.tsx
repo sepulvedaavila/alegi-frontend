@@ -5,11 +5,10 @@ import { cn } from '@/lib/utils';
 import FavoritesSection from './FavoritesSection';
 
 const CasesDropdown = () => {
-  const { recentCases, selectedCase, selectCase, isLoadingCases } = useDashboard();
+  const { recentCases, isLoadingCases } = useDashboard();
   const navigate = useNavigate();
 
   const handleCaseClick = (caseId: string) => {
-    selectCase(caseId);
     navigate(`/dashboard/case/${caseId}`);
   };
 
@@ -43,10 +42,7 @@ const CasesDropdown = () => {
       {recentCases.map(caseItem => (
         <div 
           key={caseItem.id}
-          className={cn(
-            "flex items-center py-1 text-sm cursor-pointer hover:bg-gray-100 rounded px-2 transition-colors",
-            selectedCase?.id === caseItem.id ? "text-alegi-blue font-medium bg-blue-50" : "text-gray-600 hover:text-gray-900"
-          )}
+          className="flex items-center py-1 text-sm cursor-pointer hover:bg-gray-100 rounded px-2 transition-colors text-gray-600 hover:text-gray-900"
           onClick={() => handleCaseClick(caseItem.id)}
         >
           <FileText size={14} className="mr-2" />

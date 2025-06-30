@@ -51,7 +51,6 @@ export type DashboardContextType = {
   centerWidgets: Widget[];
   rightWidgets: Widget[];
   sidebarCollapsed: boolean;
-  selectedCase: Case | null;
   recentCases: Case[];
   comparisonCase: Case | null;
   favoriteCases: Case[];
@@ -59,7 +58,6 @@ export type DashboardContextType = {
   toggleSidebar: () => void;
   moveWidget: (widgetId: string, sourceColumn: ColumnId, destinationColumn: ColumnId, newPosition: number) => void;
   resizeWidget: (widgetId: string, columnId: ColumnId, newSize: 'small' | 'medium' | 'large') => void;
-  selectCase: (caseId: string) => void;
   selectComparisonCase: (caseId: string | null) => void;
   toggleFavorite: (caseId: string) => void;
   isFavorite: (caseId: string) => boolean;
