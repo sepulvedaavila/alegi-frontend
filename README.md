@@ -4,6 +4,31 @@
 
 This is a modern React application built with Vite, TypeScript, and shadcn-ui components.
 
+## Features
+
+### Custom Reports
+The platform now includes a comprehensive Custom Reports system that allows users to generate three different types of reports from their case data:
+
+1. **Case Performance Summary (PDF)**
+   - Total cases, active cases, and settled cases
+   - Settlement values and resolution times
+   - Cases by type and outcome analysis
+   - Average confidence scores
+
+2. **Financial Analysis Report (Excel)**
+   - Total estimated and settled values
+   - Average settlement amounts and settlement rates
+   - Financial breakdown by case type
+   - Monthly settlement tracking
+
+3. **Risk Assessment Report (CSV)**
+   - Risk analysis by case type, judge, and jurisdiction
+   - Confidence score distribution
+   - Common risk factors identification
+   - Judge performance metrics
+
+Each report provides different insights and can be downloaded in various formats (PDF, Excel, CSV) for further analysis and presentation.
+
 ## Technologies Used
 
 - Vite

@@ -1,4 +1,3 @@
-
 import { WidgetType } from '@/types/dashboard';
 import {
   BarChart,
@@ -16,7 +15,10 @@ import {
   FilePlus2,
   UserCog,
   CaseLower,
-  Gavel
+  Gavel,
+  BarChart3,
+  DollarSign,
+  AlertTriangle
 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 
@@ -294,12 +296,37 @@ const WidgetContent = ({ type, isComparison = false }: WidgetContentProps) => {
     case 'customReports':
       return (
         <div className="flex items-center justify-center h-full">
-          <div className="text-center p-4">
+          <div className="text-center p-4 w-full">
             <FileText className="mx-auto text-gray-400 mb-2" size={24} />
             <h3 className="text-sm font-medium">Custom Reports</h3>
-            <p className="text-xs text-gray-500 mt-1">Generate custom reports and data exports</p>
-            <button className="mt-3 bg-alegi-blue text-white text-xs px-3 py-1 rounded">
-              Create Report
+            <p className="text-xs text-gray-500 mt-1 mb-3">Generate comprehensive reports from your case data</p>
+            
+            <div className="space-y-2 text-xs">
+              <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                <div className="flex items-center">
+                  <BarChart3 className="mr-1 text-alegi-blue" size={12} />
+                  <span>Performance Summary</span>
+                </div>
+                <span className="text-gray-500">PDF</span>
+              </div>
+              <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                <div className="flex items-center">
+                  <DollarSign className="mr-1 text-green-600" size={12} />
+                  <span>Financial Analysis</span>
+                </div>
+                <span className="text-gray-500">Excel</span>
+              </div>
+              <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                <div className="flex items-center">
+                  <AlertTriangle className="mr-1 text-amber-600" size={12} />
+                  <span>Risk Assessment</span>
+                </div>
+                <span className="text-gray-500">CSV</span>
+              </div>
+            </div>
+            
+            <button className="mt-3 bg-alegi-blue text-white text-xs px-3 py-1 rounded hover:bg-alegi-blue/90 transition-colors">
+              View All Reports
             </button>
           </div>
         </div>

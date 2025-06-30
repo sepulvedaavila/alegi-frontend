@@ -5,6 +5,7 @@ import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import DashboardHome from '@/components/dashboard/DashboardHome';
 import Settings from '@/components/dashboard/Settings';
 import CaseBriefForm from '@/components/cases/CaseBriefForm';
+import CustomReports from '@/components/dashboard/CustomReports';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
@@ -64,7 +65,7 @@ const Dashboard = () => {
           <Route path="/" element={<DashboardHome />} />
           <Route path="/new-case" element={<CaseBriefForm />} />
           <Route path="/case-comparison" element={<div className="p-6"><h1 className="text-2xl font-bold">Case Comparison</h1><p className="mt-4">Case comparison interface will be implemented soon.</p></div>} />
-          <Route path="/custom-reports" element={<div className="p-6"><h1 className="text-2xl font-bold">Custom Reports</h1><p className="mt-4">Custom reports interface will be implemented soon.</p></div>} />
+          <Route path="/custom-reports" element={<CustomReports />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
