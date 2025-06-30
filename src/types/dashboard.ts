@@ -1,5 +1,7 @@
 // Types for our widget system
 export type WidgetType = 
+  // General dashboard widgets
+  | 'dashboardOverview'
   // Center column widgets
   | 'caseOverview' 
   | 'predictedOutcome' 

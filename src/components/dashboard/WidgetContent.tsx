@@ -24,6 +24,7 @@ import { Progress } from '@/components/ui/progress';
 
 // Import widget-specific components
 import CaseOverviewWidget from './widgets/CaseOverviewWidget';
+import DashboardOverviewWidget from './widgets/DashboardOverviewWidget';
 import PredictedOutcomeWidget from './widgets/PredictedOutcomeWidget';
 import NewCaseEntryWidget from './widgets/NewCaseEntryWidget';
 import BatchUploadWidget from './widgets/BatchUploadWidget';
@@ -40,6 +41,8 @@ interface WidgetContentProps {
 const WidgetContent = ({ type, isComparison = false }: WidgetContentProps) => {
   // Render different content based on widget type
   switch (type) {
+    case 'dashboardOverview':
+      return <DashboardOverviewWidget />;
     case 'caseOverview':
       return <CaseOverviewWidget />;
     case 'predictedOutcome':
@@ -200,8 +203,8 @@ const WidgetContent = ({ type, isComparison = false }: WidgetContentProps) => {
                   <span className="text-green-600 font-medium">74%</span>
                 </div>
                 <div className="flex justify-between text-xs">
-                  <span>Avg. recovery amount:</span>
-                  <span>$910,000</span>
+                  <span>Avg. settlement amount:</span>
+                  <span>$950,000</span>
                 </div>
               </div>
             </div>
@@ -212,65 +215,60 @@ const WidgetContent = ({ type, isComparison = false }: WidgetContentProps) => {
           </div>
         </div>
       );
-    case 'settlementLikelihood':
     case 'settlementVsTrialAnalysis':
       return (
-        <div className="space-y-3">
-          <h4 className="text-sm font-medium">Settlement & Appeal Analysis</h4>
-          <div className="grid grid-cols-2 gap-2">
-            <div className="p-2 bg-blue-50 rounded-md text-center">
-              <div className="text-xl font-bold text-blue-600">64%</div>
-              <div className="text-xs">Settlement Likely</div>
+        <div className="space-y-4">
+          <h4 className="text-sm font-medium">Settlement vs Trial Analysis</h4>
+          <div className="space-y-3">
+            <div className="p-3 border rounded-lg bg-green-50">
+              <div className="flex items-center justify-between">
+                <span className="font-medium text-sm">Recommended: Settlement</span>
+                <span className="text-green-600 font-bold">$1.2M</span>
+              </div>
+              <p className="text-xs text-gray-600 mt-1">High probability of favorable settlement based on similar cases</p>
             </div>
-            <div className="p-2 bg-amber-50 rounded-md text-center">
-              <div className="text-xl font-bold text-amber-600">31%</div>
-              <div className="text-xs">Appeal Probability</div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="text-center p-3 border rounded-lg">
+                <div className="text-lg font-bold text-green-600">$1.2M</div>
+                <div className="text-xs text-gray-600">Expected Settlement</div>
+              </div>
+              <div className="text-center p-3 border rounded-lg">
+                <div className="text-lg font-bold text-blue-600">$2.1M</div>
+                <div className="text-xs text-gray-600">Trial Win Potential</div>
+              </div>
             </div>
-          </div>
-          <div className="text-xs text-gray-500">
-            <p>Recommended settlement window: $750,000 - $950,000</p>
-            <p>Based on 124 similar cases in the Northern District</p>
+            <div className="text-xs text-gray-500">
+              <p>• 64% chance of settlement</p>
+              <p>• 28% chance of trial win</p>
+              <p>• 8% chance of trial loss</p>
+            </div>
           </div>
         </div>
       );
     case 'strategyRecommendations':
       return (
-        <div className="space-y-3">
+        <div className="space-y-4">
           <h4 className="text-sm font-medium">AI Strategy Recommendations</h4>
-          <div className="space-y-2">
-            <div className="p-3 border border-green-200 bg-green-50 rounded-md">
-              <h5 className="text-sm font-medium text-green-700">Primary Strategy</h5>
-              <p className="text-xs mt-1">Pursue early settlement negotiations highlighting the three strongest precedent cases. Expert testimony from Dr. Chen would significantly strengthen position.</p>
-            </div>
-            <div className="p-3 border rounded-md">
-              <h5 className="text-sm font-medium">Alternative Approaches</h5>
-              <ul className="list-disc text-xs pl-4 mt-1 space-y-1">
-                <li>File motion to exclude unreliable witness testimony</li>
-                <li>Request summary judgment on procedural grounds</li>
-                <li>Develop stronger causation argument with additional expert</li>
-              </ul>
-            </div>
-            <div className="p-3 border rounded-md">
-              <h5 className="text-sm font-medium">Document Recommendations</h5>
-              <div className="grid grid-cols-2 gap-2 mt-2">
-                <div className="flex items-center text-xs">
-                  <FileText className="mr-1 text-alegi-blue" size={14} />
-                  <span>Updated Complaint</span>
+          <div className="space-y-3">
+            {[
+              { priority: 'High', action: 'Focus on settlement negotiations', reason: 'Strong precedent and favorable judge history' },
+              { priority: 'Medium', action: 'Prepare expert witness testimony', reason: 'Technical aspects may need clarification' },
+              { priority: 'Low', action: 'Consider mediation', reason: 'Both parties have incentive to avoid trial costs' }
+            ].map((rec, idx) => (
+              <div key={idx} className="p-3 border rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <span className={`text-xs px-2 py-1 rounded ${
+                    rec.priority === 'High' ? 'bg-red-100 text-red-800' :
+                    rec.priority === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
+                    'bg-green-100 text-green-800'
+                  }`}>
+                    {rec.priority} Priority
+                  </span>
                 </div>
-                <div className="flex items-center text-xs">
-                  <FileText className="mr-1 text-alegi-blue" size={14} />
-                  <span>Expert Witness List</span>
-                </div>
-                <div className="flex items-center text-xs">
-                  <FileText className="mr-1 text-alegi-blue" size={14} />
-                  <span>Settlement Proposal</span>
-                </div>
-                <div className="flex items-center text-xs">
-                  <FileText className="mr-1 text-alegi-blue" size={14} />
-                  <span>Discovery Request</span>
-                </div>
+                <div className="font-medium text-sm">{rec.action}</div>
+                <div className="text-xs text-gray-600 mt-1">{rec.reason}</div>
               </div>
-            </div>
+            ))}
           </div>
         </div>
       );
@@ -280,79 +278,70 @@ const WidgetContent = ({ type, isComparison = false }: WidgetContentProps) => {
       return <AverageTimeResolutionWidget />;
     case 'realTimeLawChanges':
       return <RealTimeLawChangesWidget />;
+    case 'legalResearch':
+      return (
+        <div className="space-y-4">
+          <h4 className="text-sm font-medium">Legal Research</h4>
+          <div className="space-y-3">
+            <div className="p-3 border rounded-lg">
+              <div className="flex items-center">
+                <BookOpen className="mr-2 text-alegi-blue" size={18} />
+                <span className="font-medium text-sm">Recent Case Law</span>
+              </div>
+              <div className="mt-2 space-y-1">
+                <div className="text-xs">
+                  <span className="font-medium">Smith v. Johnson (2023)</span>
+                  <p className="text-gray-600">Established precedent for medical malpractice in similar circumstances</p>
+                </div>
+              </div>
+            </div>
+            <div className="p-3 border rounded-lg">
+              <div className="flex items-center">
+                <Scale className="mr-2 text-alegi-blue" size={18} />
+                <span className="font-medium text-sm">Statutory Updates</span>
+              </div>
+              <div className="mt-2 space-y-1">
+                <div className="text-xs">
+                  <span className="font-medium">Health Care Reform Act 2023</span>
+                  <p className="text-gray-600">New regulations affecting medical liability cases</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
     case 'caseComparison':
       return (
-        <div className="flex items-center justify-center h-full">
-          <div className="text-center p-4">
-            <Scale className="mx-auto text-gray-400 mb-2" size={24} />
-            <h3 className="text-sm font-medium">Case Comparison Tool</h3>
-            <p className="text-xs text-gray-500 mt-1">Select cases to compare outcomes and factors</p>
-            <button className="mt-3 bg-alegi-blue text-white text-xs px-3 py-1 rounded">
-              Select Cases
-            </button>
+        <div className="space-y-4">
+          <h4 className="text-sm font-medium">Case Comparison</h4>
+          <p className="text-xs text-gray-500">Select cases to compare outcomes, strategies, and risk factors.</p>
+          <div className="p-3 border rounded-lg bg-gray-50">
+            <div className="text-center text-sm text-gray-600">
+              <Compass className="mx-auto h-8 w-8 mb-2" />
+              <p>Use the case selector to choose cases for comparison</p>
+            </div>
           </div>
         </div>
       );
     case 'customReports':
       return (
-        <div className="flex items-center justify-center h-full">
-          <div className="text-center p-4 w-full">
-            <FileText className="mx-auto text-gray-400 mb-2" size={24} />
-            <h3 className="text-sm font-medium">Custom Reports</h3>
-            <p className="text-xs text-gray-500 mt-1 mb-3">Generate comprehensive reports from your case data</p>
-            
-            <div className="space-y-2 text-xs">
-              <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                <div className="flex items-center">
-                  <BarChart3 className="mr-1 text-alegi-blue" size={12} />
-                  <span>Performance Summary</span>
-                </div>
-                <span className="text-gray-500">PDF</span>
-              </div>
-              <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                <div className="flex items-center">
-                  <DollarSign className="mr-1 text-green-600" size={12} />
-                  <span>Financial Analysis</span>
-                </div>
-                <span className="text-gray-500">Excel</span>
-              </div>
-              <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                <div className="flex items-center">
-                  <AlertTriangle className="mr-1 text-amber-600" size={12} />
-                  <span>Risk Assessment</span>
-                </div>
-                <span className="text-gray-500">CSV</span>
-              </div>
-            </div>
-            
-            <button className="mt-3 bg-alegi-blue text-white text-xs px-3 py-1 rounded hover:bg-alegi-blue/90 transition-colors">
-              View All Reports
-            </button>
-          </div>
-        </div>
-      );
-    case 'legalResearch':
-      return (
-        <div className="flex items-center justify-center h-full">
-          <div className="text-center p-4">
-            <BookOpen className="mx-auto text-gray-400 mb-2" size={24} />
-            <h3 className="text-sm font-medium">Legal Research</h3>
-            <p className="text-xs text-gray-500 mt-1">Search for relevant cases and precedents</p>
-            <div className="mt-3 flex">
-              <input 
-                type="text" 
-                placeholder="Search case law..." 
-                className="border border-gray-300 rounded-l-md text-xs px-3 py-1 flex-grow"
-              />
-              <button className="bg-alegi-blue text-white text-xs px-3 py-1 rounded-r-md">
-                Search
-              </button>
+        <div className="space-y-4">
+          <h4 className="text-sm font-medium">Custom Reports</h4>
+          <p className="text-xs text-gray-500">Generate detailed reports and analytics for your cases.</p>
+          <div className="p-3 border rounded-lg bg-gray-50">
+            <div className="text-center text-sm text-gray-600">
+              <FilePlus2 className="mx-auto h-8 w-8 mb-2" />
+              <p>Access comprehensive reporting tools</p>
             </div>
           </div>
         </div>
       );
     default:
-      return <div>Widget content not implemented: {type}</div>;
+      return (
+        <div className="text-center text-gray-500">
+          <p>Widget type "{type}" not implemented</p>
+        </div>
+      );
   }
 };
 

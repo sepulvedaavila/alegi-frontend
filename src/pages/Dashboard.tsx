@@ -3,6 +3,7 @@ import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { DashboardProvider } from '@/contexts/DashboardContext';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import DashboardHome from '@/components/dashboard/DashboardHome';
+import CaseView from '@/components/dashboard/CaseView';
 import Settings from '@/components/dashboard/Settings';
 import CaseBriefForm from '@/components/cases/CaseBriefForm';
 import CustomReports from '@/components/dashboard/CustomReports';
@@ -63,6 +64,7 @@ const Dashboard = () => {
       <DashboardLayout>
         <Routes>
           <Route path="/" element={<DashboardHome />} />
+          <Route path="/case/:caseId" element={<CaseView />} />
           <Route path="/new-case" element={<CaseBriefForm />} />
           <Route path="/case-comparison" element={<div className="p-6"><h1 className="text-2xl font-bold">Case Comparison</h1><p className="mt-4">Case comparison interface will be implemented soon.</p></div>} />
           <Route path="/custom-reports" element={<CustomReports />} />

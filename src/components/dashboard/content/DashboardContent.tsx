@@ -14,6 +14,11 @@ const DashboardContent = ({ dashboardRef }: DashboardContentProps) => {
     widget.type !== 'caseComparison' && widget.type !== 'customReports'
   );
 
+  // Filter out case-specific widgets when no case is selected
+  const generalWidgets = mainCenterWidgets.filter(widget => 
+    !['caseOverview', 'predictedOutcome', 'complexityScore', 'riskAssessment', 'precedentAnalysis', 'outcomeProbability', 'judgeAnalysis', 'settlementVsTrialAnalysis', 'strategyRecommendations', 'factStrengthAnalysis'].includes(widget.type)
+  );
+
   return (
     <div ref={dashboardRef} data-dashboard-container className="flex flex-col lg:flex-row gap-4">
       {/* Center Column - 70% width */}
@@ -64,21 +69,11 @@ const DashboardContent = ({ dashboardRef }: DashboardContentProps) => {
           </div>
         ) : (
           <div className="flex flex-col gap-4">
-            {/* Case Overview Widget at the top of the center column */}
-            <div className="bg-white rounded-lg shadow">
-              <div className="px-4 py-3 border-b border-gray-200">
-                <h2 className="text-lg font-medium text-gray-900">Case Overview</h2>
-              </div>
-              <div className="p-4">
-                <CaseOverviewWidget />
-              </div>
-            </div>
-            
-            {/* Other Case Insights */}
+            {/* General Dashboard Widgets */}
             <WidgetContainer 
               columnId="centerColumn" 
-              widgets={mainCenterWidgets}
-              title="Case Insights"
+              widgets={generalWidgets}
+              title="Dashboard Analytics"
               isComparison={false}
             />
           </div>
