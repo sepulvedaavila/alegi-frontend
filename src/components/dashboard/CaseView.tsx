@@ -10,6 +10,18 @@ import { fetchCompleteCase } from '@/utils/case/caseFetching';
 import { useState, useEffect } from 'react';
 import { CompleteCase } from '@/utils/case/types';
 
+// Import all the case insights widgets
+import PredictedOutcomeWidget from '@/components/dashboard/widgets/PredictedOutcomeWidget';
+import CaseComplexityRiskWidget from '@/components/dashboard/widgets/CaseComplexityRiskWidget';
+import RiskAssessmentWidget from '@/components/dashboard/widgets/RiskAssessmentWidget';
+import PrecedentAnalysisWidget from '@/components/dashboard/widgets/PrecedentAnalysisWidget';
+import JudgeAnalysisWidget from '@/components/dashboard/widgets/JudgeAnalysisWidget';
+import LawyerAnalysisWidget from '@/components/dashboard/widgets/LawyerAnalysisWidget';
+import SettlementVsTrialAnalysisWidget from '@/components/dashboard/widgets/SettlementVsTrialAnalysisWidget';
+import AIStrategyRecommendationsWidget from '@/components/dashboard/widgets/AIStrategyRecommendationsWidget';
+import FactStrengthAnalysisWidget from '@/components/dashboard/widgets/FactStrengthAnalysisWidget';
+import AverageTimeResolutionWidget from '@/components/dashboard/widgets/AverageTimeResolutionWidget';
+
 const CaseView = () => {
   const { caseId } = useParams<{ caseId: string }>();
   const navigate = useNavigate();
@@ -137,8 +149,9 @@ const CaseView = () => {
 
           {/* Main Content */}
           <Tabs defaultValue="overview" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="insights">Insights</TabsTrigger>
               <TabsTrigger value="timeline">Timeline</TabsTrigger>
               <TabsTrigger value="documents">Documents</TabsTrigger>
               <TabsTrigger value="analytics">Analytics</TabsTrigger>
@@ -265,6 +278,106 @@ const CaseView = () => {
                     </CardContent>
                   </Card>
                 </div>
+              </div>
+            </TabsContent>
+
+            {/* Insights Tab */}
+            <TabsContent value="insights" className="space-y-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Predicted Case Outcome */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Predicted Case Outcome</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <PredictedOutcomeWidget />
+                  </CardContent>
+                </Card>
+
+                {/* Case Complexity & Risk Score */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Case Complexity & Risk Score</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <CaseComplexityRiskWidget />
+                  </CardContent>
+                </Card>
+
+                {/* Risk Assessment */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Risk Assessment</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <RiskAssessmentWidget />
+                  </CardContent>
+                </Card>
+
+                {/* Precedent Analysis */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Precedent Analysis</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <PrecedentAnalysisWidget />
+                  </CardContent>
+                </Card>
+
+                {/* Judge & Lawyer Analysis */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Judge & Lawyer Analysis</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <JudgeAnalysisWidget />
+                      <div className="border-t pt-4">
+                        <LawyerAnalysisWidget />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Settlement vs Trial Analysis */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Settlement vs Trial Analysis</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <SettlementVsTrialAnalysisWidget />
+                  </CardContent>
+                </Card>
+
+                {/* AI Strategy Recommendations */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>AI Strategy Recommendations</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <AIStrategyRecommendationsWidget />
+                  </CardContent>
+                </Card>
+
+                {/* Fact Strength Analysis */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Fact Strength Analysis</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <FactStrengthAnalysisWidget />
+                  </CardContent>
+                </Card>
+
+                {/* Average Time for Resolution */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Average Time for Resolution</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <AverageTimeResolutionWidget />
+                  </CardContent>
+                </Card>
               </div>
             </TabsContent>
 

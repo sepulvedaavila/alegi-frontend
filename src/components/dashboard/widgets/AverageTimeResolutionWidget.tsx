@@ -1,12 +1,9 @@
 
 import { Clock, Calendar, History, ArrowRight } from 'lucide-react';
-import { useDashboard } from '@/contexts/DashboardContext';
 
-const AverageTimeResolutionWidget = () => {
-  const { selectedCase } = useDashboard();
-
-  if (!selectedCase) {
-    return <div className="text-center py-4">No case selected</div>;
+const AverageTimeResolutionWidget = ({ caseData = null }) => {
+  if (!caseData) {
+    return <div className="text-center py-4">No case data available</div>;
   }
 
   // Example data - would come from API in a real application

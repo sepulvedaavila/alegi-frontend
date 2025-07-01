@@ -1,9 +1,7 @@
 
 import { ArrowDown, ArrowUp, Scale, DollarSign, Briefcase, Clock } from 'lucide-react';
-import { useDashboard } from '@/contexts/DashboardContext';
 
-const PredictedOutcomeWidget = ({ isComparison = false }) => {
-  const { selectedCase, comparisonCase } = useDashboard();
+const PredictedOutcomeWidget = ({ isComparison = false, caseData = null }) => {
   
   const renderCasePrediction = (caseItem: any, className = '') => {
     return (
@@ -83,19 +81,19 @@ const PredictedOutcomeWidget = ({ isComparison = false }) => {
 
   return (
     <div>
-      {isComparison && comparisonCase ? (
+      {isComparison ? (
         <div className="grid grid-cols-2 gap-4">
           <div className="border-r pr-2">
-            <h4 className="text-sm font-medium text-alegi-blue mb-2">{selectedCase?.title}</h4>
-            {renderCasePrediction(selectedCase)}
+            <h4 className="text-sm font-medium text-alegi-blue mb-2">Case A</h4>
+            {renderCasePrediction(caseData)}
           </div>
           <div className="pl-2">
-            <h4 className="text-sm font-medium text-alegi-blue mb-2">{comparisonCase.title}</h4>
-            {renderCasePrediction(comparisonCase)}
+            <h4 className="text-sm font-medium text-alegi-blue mb-2">Case B</h4>
+            {renderCasePrediction(caseData)}
           </div>
         </div>
       ) : (
-        renderCasePrediction(selectedCase)
+        renderCasePrediction(caseData)
       )}
     </div>
   );

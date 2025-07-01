@@ -2,10 +2,8 @@
 import { useState } from 'react';
 import { Check, CheckCheck, Shield, AlertCircle, Eye } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
-import { useDashboard } from '@/contexts/DashboardContext';
 
-const FactStrengthAnalysisWidget = () => {
-  const { selectedCase } = useDashboard();
+const FactStrengthAnalysisWidget = ({ caseData = null }) => {
   const [showAllEvidence, setShowAllEvidence] = useState(false);
   const [evidenceItems] = useState([
     { id: 1, name: 'Medical Expert Testimony', strength: 85, impact: 'High', type: 'Expert' },
@@ -36,8 +34,8 @@ const FactStrengthAnalysisWidget = () => {
     return <AlertCircle size={16} className="text-red-600" />;
   };
 
-  if (!selectedCase) {
-    return <div className="text-center py-4">No case selected</div>;
+  if (!caseData) {
+    return <div className="text-center py-4">No case data available</div>;
   }
 
   // Display all evidence items if showAllEvidence is true, otherwise only show the first 5

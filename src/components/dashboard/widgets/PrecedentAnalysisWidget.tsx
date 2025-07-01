@@ -1,9 +1,7 @@
 
 import { Scale, FileText, Info, BarChart3 } from 'lucide-react';
-import { useDashboard } from '@/contexts/DashboardContext';
 
-const PrecedentAnalysisWidget = ({ isComparison = false }) => {
-  const { selectedCase, comparisonCase } = useDashboard();
+const PrecedentAnalysisWidget = ({ isComparison = false, caseData = null }) => {
   
   // Mock data for similar cases
   const similarCases = [
@@ -78,19 +76,19 @@ const PrecedentAnalysisWidget = ({ isComparison = false }) => {
 
   return (
     <div>
-      {isComparison && comparisonCase ? (
+      {isComparison ? (
         <div className="grid grid-cols-2 gap-4">
           <div className="border-r pr-2">
-            <h4 className="text-sm font-medium text-alegi-blue mb-2">{selectedCase?.title}</h4>
-            {renderPrecedentAnalysis(selectedCase)}
+            <h4 className="text-sm font-medium text-alegi-blue mb-2">Case A</h4>
+            {renderPrecedentAnalysis(caseData)}
           </div>
           <div className="pl-2">
-            <h4 className="text-sm font-medium text-alegi-blue mb-2">{comparisonCase.title}</h4>
-            {renderPrecedentAnalysis(comparisonCase)}
+            <h4 className="text-sm font-medium text-alegi-blue mb-2">Case B</h4>
+            {renderPrecedentAnalysis(caseData)}
           </div>
         </div>
       ) : (
-        renderPrecedentAnalysis(selectedCase)
+        renderPrecedentAnalysis(caseData)
       )}
     </div>
   );

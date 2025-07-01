@@ -1,9 +1,7 @@
 
 import { Scale, UserCog, CheckCircle, AlertTriangle, Gavel, BookOpen, TrendingUp, BarChart3 } from 'lucide-react';
-import { useDashboard } from '@/contexts/DashboardContext';
 
-const JudgeAnalysisWidget = ({ isComparison = false }) => {
-  const { selectedCase, comparisonCase } = useDashboard();
+const JudgeAnalysisWidget = ({ isComparison = false, caseData = null }) => {
 
   const renderAnalysis = (caseData: any, className = '') => {
     return (
@@ -68,19 +66,19 @@ const JudgeAnalysisWidget = ({ isComparison = false }) => {
 
   return (
     <div>
-      {isComparison && comparisonCase ? (
+      {isComparison ? (
         <div className="grid grid-cols-2 gap-4">
           <div className="border-r pr-2">
-            <h4 className="text-sm font-medium text-alegi-blue mb-2">{selectedCase?.title}</h4>
-            {renderAnalysis(selectedCase)}
+            <h4 className="text-sm font-medium text-alegi-blue mb-2">Case A</h4>
+            {renderAnalysis(caseData)}
           </div>
           <div className="pl-2">
-            <h4 className="text-sm font-medium text-alegi-blue mb-2">{comparisonCase.title}</h4>
-            {renderAnalysis(comparisonCase)}
+            <h4 className="text-sm font-medium text-alegi-blue mb-2">Case B</h4>
+            {renderAnalysis(caseData)}
           </div>
         </div>
       ) : (
-        renderAnalysis(selectedCase)
+        renderAnalysis(caseData)
       )}
     </div>
   );
