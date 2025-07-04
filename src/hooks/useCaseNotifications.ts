@@ -174,6 +174,8 @@ const useCaseNotifications = (options: UseCaseNotificationsOptions = {}) => {
     setIsConnected(false);
     console.log('Starting polling for case status');
 
+    let lastUpdate = new Date().toISOString();
+
     const pollCaseStatus = async () => {
       try {
         const token = getJwtToken();
@@ -182,21 +184,46 @@ const useCaseNotifications = (options: UseCaseNotificationsOptions = {}) => {
           return;
         }
 
-        const response = await fetch(`${getBackendUrl()}/api/cases/${caseId}/status`, {
+        // Use conditional polling endpoint if available, fallback to regular status
+        const response = await fetch(`${getBackendUrl()}/api/cases/${caseId}/updates?lastUpdate=${lastUpdate}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
         });
         
         if (response.ok) {
-          const data: CaseStatus = await response.json();
-          setStatus(data.status);
-          setError(null);
+          const data = await response.json();
           
-          // Stop polling if completed or failed
-          if (data.status === 'completed' || data.status === 'failed') {
-            clearInterval(pollingIntervalRef.current!);
-            setIsPolling(false);
+          // If there are updates, use them; otherwise fallback to regular status check
+          if (data.hasUpdates) {
+            setStatus(data.status);
+            setError(null);
+            lastUpdate = data.timestamp || new Date().toISOString();
+            
+            // Stop polling if completed or failed
+            if (data.status === 'completed' || data.status === 'failed') {
+              clearInterval(pollingIntervalRef.current!);
+              setIsPolling(false);
+            }
+          } else {
+            // No updates, check regular status as fallback
+            const statusResponse = await fetch(`${getBackendUrl()}/api/cases/${caseId}/status`, {
+              headers: {
+                'Authorization': `Bearer ${token}`
+              }
+            });
+            
+            if (statusResponse.ok) {
+              const statusData: CaseStatus = await statusResponse.json();
+              setStatus(statusData.status);
+              setError(null);
+              
+              // Stop polling if completed or failed
+              if (statusData.status === 'completed' || statusData.status === 'failed') {
+                clearInterval(pollingIntervalRef.current!);
+                setIsPolling(false);
+              }
+            }
           }
         } else if (response.status === 401) {
           setError('Authentication failed');

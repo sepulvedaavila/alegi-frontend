@@ -126,6 +126,97 @@ export const checkWebSocketAvailability = async (session: any): Promise<boolean>
 };
 
 /**
+ * Fetches enhanced status for a specific case with processing timestamps
+ */
+export const fetchEnhancedCaseStatus = async (caseId: string, session: any): Promise<any> => {
+  try {
+    const token = getJwtToken(session);
+    if (!token) {
+      throw new Error('No authentication token available');
+    }
+
+    const response = await fetch(`${getBackendUrl()}/api/cases/${caseId}/enhanced-status`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error('Authentication failed');
+      } else if (response.status === 403) {
+        throw new Error('Access denied');
+      } else if (response.status === 404) {
+        throw new Error('Case not found');
+      } else {
+        throw new Error(`Failed to fetch enhanced case status: ${response.statusText}`);
+      }
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error fetching enhanced case status:', error);
+    throw error;
+  }
+};
+
+/**
+ * Checks for case updates since last check
+ */
+export const checkCaseUpdates = async (caseId: string, lastUpdate: string, session: any): Promise<any> => {
+  try {
+    const token = getJwtToken(session);
+    if (!token) {
+      throw new Error('No authentication token available');
+    }
+
+    const response = await fetch(`${getBackendUrl()}/api/cases/${caseId}/updates?lastUpdate=${lastUpdate}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error('Authentication failed');
+      } else if (response.status === 403) {
+        throw new Error('Access denied');
+      } else if (response.status === 404) {
+        throw new Error('Case not found');
+      } else {
+        throw new Error(`Failed to check case updates: ${response.statusText}`);
+      }
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error checking case updates:', error);
+    throw error;
+  }
+};
+
+/**
+ * Checks backend health and available features
+ */
+export const checkBackendHealth = async (): Promise<any> => {
+  try {
+    const response = await fetch(`${getBackendUrl()}/api/health`);
+
+    if (!response.ok) {
+      throw new Error(`Backend health check failed: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error checking backend health:', error);
+    throw error;
+  }
+};
+
+/**
  * Hook for managing all user cases status
  */
 export const useAllCasesStatus = () => {

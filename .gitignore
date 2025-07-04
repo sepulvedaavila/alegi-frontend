@@ -68,3 +68,5 @@ jspm_packages/
 .env.development.local
 .env.test.local
 .env.production.local   
+
+BACKEND_INTEGRATION_ANALYSIS.md
