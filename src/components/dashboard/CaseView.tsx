@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, FileText, Calendar, User, Building, AlertTriangle, CheckCircle, Clock, DollarSign, TrendingUp, BarChart3 } from 'lucide-react';
+import { ArrowLeft, FileText, Calendar, User, Building, AlertTriangle, CheckCircle, Clock, DollarSign, TrendingUp, BarChart3, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -109,6 +109,16 @@ const CaseView = () => {
     }
   };
 
+  const copyCaseId = async () => {
+    try {
+      await navigator.clipboard.writeText(transformedCase.id);
+      // You could add a toast notification here if you have a toast system
+      console.log('Case ID copied to clipboard');
+    } catch (err) {
+      console.error('Failed to copy Case ID:', err);
+    }
+  };
+
   return (
     <div className="min-h-full bg-gray-50">
       <div className="py-6">
@@ -126,7 +136,18 @@ const CaseView = () => {
                 </Button>
                 <div>
                   <h1 className="text-3xl font-bold text-gray-900">{transformedCase.title}</h1>
-                  <p className="text-gray-600">Case ID: {transformedCase.id}</p>
+                  <div className="flex items-center space-x-2">
+                    <p className="text-gray-600">Case ID: {transformedCase.id}</p>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={copyCaseId}
+                      className="h-6 w-6 p-0 hover:bg-gray-100"
+                      title="Copy Case ID"
+                    >
+                      <Copy className="h-3 w-3" />
+                    </Button>
+                  </div>
                 </div>
               </div>
               <div className="flex items-center space-x-3">

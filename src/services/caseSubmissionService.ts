@@ -17,10 +17,16 @@ export const submitCaseForm = async (
     console.log('Case submission result:', result);
     
     if (result.success) {
-      // Show success toast
+      // Show success toast with processing notification
       toast.success('Case brief submitted successfully!', {
-        description: result.message || 'Your case has been saved to the database.',
+        description: result.message || 'Your case has been saved and is now being processed by AI.',
         duration: 5000,
+      });
+      
+      // Show additional toast about real-time updates
+      toast.info('Real-time updates enabled', {
+        description: 'You will receive notifications as your case is processed.',
+        duration: 4000,
       });
       
       // Check if there were any partial errors (e.g. some files failed to upload)
