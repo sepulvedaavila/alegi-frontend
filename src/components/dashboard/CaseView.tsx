@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useDashboard } from '@/contexts/DashboardContext';
 import { fetchCompleteCase } from '@/utils/case/caseFetching';
 import { useState, useEffect } from 'react';
@@ -28,6 +29,7 @@ const CaseView = () => {
   const { toggleFavorite, isFavorite } = useDashboard();
   const [caseData, setCaseData] = useState<CompleteCase | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [copyFeedback, setCopyFeedback] = useState(false);
 
   useEffect(() => {
     const loadCase = async () => {
@@ -112,8 +114,9 @@ const CaseView = () => {
   const copyCaseId = async () => {
     try {
       await navigator.clipboard.writeText(transformedCase.id);
-      // You could add a toast notification here if you have a toast system
-      console.log('Case ID copied to clipboard');
+      setCopyFeedback(true);
+      // Hide the feedback after 2 seconds
+      setTimeout(() => setCopyFeedback(false), 2000);
     } catch (err) {
       console.error('Failed to copy Case ID:', err);
     }
@@ -138,15 +141,30 @@ const CaseView = () => {
                   <h1 className="text-3xl font-bold text-gray-900">{transformedCase.title}</h1>
                   <div className="flex items-center space-x-2">
                     <p className="text-gray-600">Case ID: {transformedCase.id}</p>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={copyCaseId}
-                      className="h-6 w-6 p-0 hover:bg-gray-100"
-                      title="Copy Case ID"
-                    >
-                      <Copy className="h-3 w-3" />
-                    </Button>
+                    <div className="relative">
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={copyCaseId}
+                              className="h-6 w-6 p-0 hover:bg-gray-100"
+                            >
+                              <Copy className="h-3 w-3" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Copy Case ID to clipboard</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                      {copyFeedback && (
+                        <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-green-100 text-green-800 text-xs px-2 py-1 rounded shadow-sm whitespace-nowrap z-10 animate-in fade-in-0 slide-in-from-top-2 duration-200">
+                          ✓ Copied to clipboard!
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>

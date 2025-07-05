@@ -61,7 +61,11 @@ const DashboardHeader = ({ onFavoriteToggle, isFavorite }: DashboardHeaderProps)
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => setShowDetailedStatus(!showDetailedStatus)}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setShowDetailedStatus(!showDetailedStatus);
+          }}
           className="flex items-center gap-2 px-3 py-1 transition-all duration-200 hover:bg-gray-100"
         >
           <StatusIcon className="h-4 w-4" />
