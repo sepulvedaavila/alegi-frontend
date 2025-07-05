@@ -106,6 +106,7 @@ const BackendStatusIndicator: React.FC<BackendStatusIndicatorProps> = ({
             </div>
             {dismissible && (
               <Button
+                type="button"
                 variant="ghost"
                 size="sm"
                 onClick={handleDismiss}
@@ -132,6 +133,7 @@ const BackendStatusIndicator: React.FC<BackendStatusIndicatorProps> = ({
             </div>
             <div className="flex items-center gap-2">
               <Button 
+                type="button"
                 variant="outline" 
                 size="sm" 
                 onClick={checkHealth}
@@ -142,13 +144,14 @@ const BackendStatusIndicator: React.FC<BackendStatusIndicatorProps> = ({
               </Button>
               {dismissible && (
                 <Button
+                  type="button"
                   variant="ghost"
                   size="sm"
                   onClick={handleDismiss}
                   className="h-6 w-6 p-0"
                 >
                   <X className="h-3 w-3" />
-                </Button>
+              </Button>
               )}
             </div>
           </div>
@@ -181,6 +184,7 @@ const BackendStatusIndicator: React.FC<BackendStatusIndicatorProps> = ({
           <div className="flex items-center gap-2">
             {showDetails && (
               <Button
+                type="button"
                 variant="ghost"
                 size="sm"
                 onClick={() => setIsExpanded(!isExpanded)}
@@ -190,6 +194,7 @@ const BackendStatusIndicator: React.FC<BackendStatusIndicatorProps> = ({
               </Button>
             )}
             <Button 
+              type="button"
               variant="ghost" 
               size="sm" 
               onClick={checkHealth}
@@ -200,6 +205,7 @@ const BackendStatusIndicator: React.FC<BackendStatusIndicatorProps> = ({
             </Button>
             {dismissible && (
               <Button
+                type="button"
                 variant="ghost"
                 size="sm"
                 onClick={handleDismiss}

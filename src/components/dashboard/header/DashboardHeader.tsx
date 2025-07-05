@@ -59,6 +59,7 @@ const DashboardHeader = ({ onFavoriteToggle, isFavorite }: DashboardHeaderProps)
         
         {/* Compact Status Indicator */}
         <Button
+          type="button"
           variant="ghost"
           size="sm"
           onClick={(e) => {
