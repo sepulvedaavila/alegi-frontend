@@ -136,20 +136,10 @@ const BackendStatusIndicator: React.FC<BackendStatusIndicatorProps> = ({
               <span className="text-sm text-red-600">Backend unavailable</span>
             </div>
             <div className="flex items-center gap-2">
-              <Button 
-                type="button"
-                variant="outline" 
-                size="sm" 
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  checkHealth();
-                }}
-                disabled={isLoading}
-              >
+              <div className="flex items-center text-xs text-gray-500">
                 <RefreshCw className={`h-3 w-3 mr-1 ${isLoading ? 'animate-spin' : ''}`} />
-                Retry
-              </Button>
+                {isLoading ? 'Checking...' : 'Auto-refresh enabled'}
+              </div>
               {dismissible && (
                 <Button
                   type="button"
@@ -209,20 +199,12 @@ const BackendStatusIndicator: React.FC<BackendStatusIndicatorProps> = ({
                 {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
               </Button>
             )}
-            <Button 
-              type="button"
-              variant="ghost" 
-              size="sm" 
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                checkHealth();
-              }}
-              disabled={isLoading}
-              className="h-6 w-6 p-0 transition-colors"
+            <div 
+              className="flex items-center justify-center h-6 w-6 transition-colors"
+              title={isLoading ? 'Refreshing...' : 'Auto-refresh active'}
             >
-              <RefreshCw className={`h-3 w-3 ${isLoading ? 'animate-spin' : ''}`} />
-            </Button>
+              <RefreshCw className={`h-3 w-3 ${isLoading ? 'animate-spin' : ''} text-gray-400`} />
+            </div>
             {dismissible && (
               <Button
                 type="button"
