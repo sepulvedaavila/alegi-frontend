@@ -109,7 +109,11 @@ const BackendStatusIndicator: React.FC<BackendStatusIndicatorProps> = ({
                 type="button"
                 variant="ghost"
                 size="sm"
-                onClick={handleDismiss}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleDismiss();
+                }}
                 className="h-6 w-6 p-0"
               >
                 <X className="h-3 w-3" />
@@ -136,7 +140,11 @@ const BackendStatusIndicator: React.FC<BackendStatusIndicatorProps> = ({
                 type="button"
                 variant="outline" 
                 size="sm" 
-                onClick={checkHealth}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  checkHealth();
+                }}
                 disabled={isLoading}
               >
                 <RefreshCw className={`h-3 w-3 mr-1 ${isLoading ? 'animate-spin' : ''}`} />
@@ -147,7 +155,11 @@ const BackendStatusIndicator: React.FC<BackendStatusIndicatorProps> = ({
                   type="button"
                   variant="ghost"
                   size="sm"
-                  onClick={handleDismiss}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleDismiss();
+                  }}
                   className="h-6 w-6 p-0"
                 >
                   <X className="h-3 w-3" />
@@ -187,7 +199,11 @@ const BackendStatusIndicator: React.FC<BackendStatusIndicatorProps> = ({
                 type="button"
                 variant="ghost"
                 size="sm"
-                onClick={() => setIsExpanded(!isExpanded)}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIsExpanded(!isExpanded);
+                }}
                 className="h-6 w-6 p-0 transition-colors"
               >
                 {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
@@ -197,7 +213,11 @@ const BackendStatusIndicator: React.FC<BackendStatusIndicatorProps> = ({
               type="button"
               variant="ghost" 
               size="sm" 
-              onClick={checkHealth}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                checkHealth();
+              }}
               disabled={isLoading}
               className="h-6 w-6 p-0 transition-colors"
             >
@@ -208,7 +228,11 @@ const BackendStatusIndicator: React.FC<BackendStatusIndicatorProps> = ({
                 type="button"
                 variant="ghost"
                 size="sm"
-                onClick={handleDismiss}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleDismiss();
+                }}
                 className="h-6 w-6 p-0 transition-colors hover:bg-gray-100"
               >
                 <X className="h-3 w-3" />
