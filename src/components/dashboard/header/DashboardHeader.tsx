@@ -1,9 +1,7 @@
 import { useState } from 'react';
 import { useDashboard } from '@/contexts/DashboardContext';
-import BackendStatusIndicator from '../BackendStatusIndicator';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { CheckCircle, XCircle, AlertCircle, Info } from 'lucide-react';
+import { CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import useBackendHealth from '@/hooks/useBackendHealth';
 
 interface DashboardHeaderProps {
@@ -13,7 +11,6 @@ interface DashboardHeaderProps {
 
 const DashboardHeader = ({ onFavoriteToggle, isFavorite }: DashboardHeaderProps) => {
   const { recentCases } = useDashboard();
-  const [showDetailedStatus, setShowDetailedStatus] = useState(false);
   const { health, isLoading } = useBackendHealth({
     checkInterval: 60000,
     autoCheck: true
@@ -46,51 +43,27 @@ const DashboardHeader = ({ onFavoriteToggle, isFavorite }: DashboardHeaderProps)
   const StatusIcon = statusDisplay.icon;
 
   return (
-    <>
-      <div className="flex items-center justify-between">
-        <div className="flex items-center">
-          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-          {recentCases.length > 0 && (
-            <span className="ml-4 text-sm text-gray-500">
-              {recentCases.length} case{recentCases.length !== 1 ? 's' : ''} total
-            </span>
-          )}
-        </div>
-        
-        {/* Compact Status Indicator */}
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            setShowDetailedStatus(!showDetailedStatus);
-          }}
-          className="flex items-center gap-2 px-3 py-1 transition-all duration-200 hover:bg-gray-100"
-        >
-          <StatusIcon className="h-4 w-4" />
-          <Badge 
-            variant="outline" 
-            className={`${statusDisplay.color} text-xs transition-colors`}
-          >
-            {statusDisplay.text}
-          </Badge>
-          <Info className="h-3 w-3 text-gray-400" />
-        </Button>
+    <div className="flex items-center justify-between">
+      <div className="flex items-center">
+        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+        {recentCases.length > 0 && (
+          <span className="ml-4 text-sm text-gray-500">
+            {recentCases.length} case{recentCases.length !== 1 ? 's' : ''} total
+          </span>
+        )}
       </div>
       
-      {/* Floating Backend Status Indicator - only show when requested */}
-      {showDetailedStatus && (
-        <BackendStatusIndicator 
-          position="floating"
-          dismissible={true}
-          showDetails={true}
-          className="w-80"
-          onClose={() => setShowDetailedStatus(false)}
-        />
-      )}
-    </>
+      {/* Non-clickable Status Indicator */}
+      <div className="flex items-center gap-2 px-3 py-1">
+        <StatusIcon className="h-4 w-4" />
+        <Badge 
+          variant="outline" 
+          className={`${statusDisplay.color} text-xs`}
+        >
+          {statusDisplay.text}
+        </Badge>
+      </div>
+    </div>
   );
 };
 
