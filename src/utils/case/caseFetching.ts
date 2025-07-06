@@ -161,8 +161,49 @@ export const fetchUserCases = async (userId: string): Promise<Case[]> => {
         status = 'Closed';
       }
 
-      // Generate a confidence score based on available data (this could be enhanced with AI analysis)
-      const confidence = Math.floor(Math.random() * 40) + 60; // Random between 60-100 for now
+      // Calculate a stable confidence score based on case data
+      const getStableConfidence = () => {
+        let baseConfidence = 65; // Default base confidence
+        
+        // Adjust based on case stage
+        switch (caseData.case_stage) {
+          case 'Settled':
+          case 'Closed':
+            baseConfidence = 85;
+            break;
+          case 'Trial':
+            baseConfidence = 75;
+            break;
+          case 'Discovery':
+            baseConfidence = 70;
+            break;
+          case 'Filed':
+            baseConfidence = 60;
+            break;
+          default:
+            baseConfidence = 65;
+        }
+        
+        // Adjust based on case type
+        switch (caseData.case_type) {
+          case 'Contract Dispute':
+            baseConfidence += 10;
+            break;
+          case 'Employment':
+            baseConfidence += 5;
+            break;
+          case 'Medical Malpractice':
+          case 'Product Liability':
+            baseConfidence -= 10;
+            break;
+          case 'Personal Injury':
+            baseConfidence -= 5;
+            break;
+        }
+        
+        // Ensure confidence is within reasonable bounds
+        return Math.max(30, Math.min(95, baseConfidence));
+      };
 
       // Determine risk level based on case type and other factors
       let risk: 'Low' | 'Medium' | 'High' = 'Medium';
@@ -176,7 +217,7 @@ export const fetchUserCases = async (userId: string): Promise<Case[]> => {
         id: caseData.id,
         title: caseData.case_name || `Case ${caseData.case_number || caseData.id}`,
         status,
-        confidence,
+        confidence: getStableConfidence(),
         date: caseData.date_filed || caseData.created_at.split('T')[0],
         risk
       };

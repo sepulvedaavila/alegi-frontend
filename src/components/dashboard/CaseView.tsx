@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useDashboard } from '@/contexts/DashboardContext';
 import { fetchCompleteCase } from '@/utils/case/caseFetching';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { CompleteCase } from '@/utils/case/types';
 import { useCaseAnalysis } from '@/hooks/useCaseAnalysis';
 import AnalysisStatusIndicator from '@/components/dashboard/AnalysisStatusIndicator';
@@ -81,36 +81,122 @@ const CaseView = () => {
   }
 
   // Transform the complete case data to match the expected format
-  const transformedCase = {
-    id: caseData.caseDetails.id,
-    title: caseData.caseDetails.case_name || `Case ${caseData.caseDetails.case_number || caseData.caseDetails.id}`,
-    status: caseData.caseDetails.case_stage === 'Settled' || caseData.caseDetails.case_stage === 'Dismissed' || caseData.caseDetails.case_stage === 'Closed' 
-      ? 'Closed' as const
-      : caseData.caseDetails.case_stage === 'Filed' || caseData.caseDetails.case_stage === 'Discovery' || caseData.caseDetails.case_stage === 'Trial'
-      ? 'Active' as const
-      : 'Pending' as const,
-    // Use real confidence from predictions or fallback
-    confidence: analysisData.predictions?.confidence_prediction_percentage || 
-                analysisData.probability?.confidence === 'high' ? 90 :
-                analysisData.probability?.confidence === 'medium' ? 70 :
-                analysisData.probability?.confidence === 'low' ? 50 :
-                Math.floor(Math.random() * 40) + 60,
-    date: caseData.caseDetails.date_filed || caseData.caseDetails.created_at.split('T')[0],
-    // Use real risk level from backend or fallback
-    risk: analysisData.predictions?.risk_level || 
-          analysisData.riskAssessment?.overallRisk ||
-          (caseData.caseDetails.case_type === 'Medical Malpractice' || caseData.caseDetails.case_type === 'Product Liability') 
-          ? 'High' as const
-          : (caseData.caseDetails.case_type === 'Contract Dispute' || caseData.caseDetails.case_type === 'Employment')
-          ? 'Low' as const
-          : 'Medium' as const,
-    // Add real financial data
-    potentialValue: analysisData.predictions?.estimated_financial_outcome || 
-                   analysisData.financialPrediction?.estimatedValue || 125000,
-    // Add real timeline data
-    daysActive: analysisData.timelineEstimate?.estimatedDays ||
-               Math.floor((new Date().getTime() - new Date(caseData.caseDetails.created_at).getTime()) / (1000 * 60 * 60 * 24))
-  };
+  // Use useMemo to prevent recreation on every render
+  const transformedCase = useMemo(() => {
+    // Calculate a stable confidence score based on case data and analysis
+    const getStableConfidence = () => {
+      // First priority: Use actual analysis data
+      if (analysisData.predictions?.confidence_prediction_percentage) {
+        return analysisData.predictions.confidence_prediction_percentage;
+      }
+      
+      // Second priority: Use probability confidence levels
+      if (analysisData.probability?.confidence) {
+        switch (analysisData.probability.confidence) {
+          case 'high': return 90;
+          case 'medium': return 70;
+          case 'low': return 50;
+          default: break;
+        }
+      }
+      
+      // Third priority: Calculate based on case stage and type
+      let baseConfidence = 65; // Default base confidence
+      
+      // Adjust based on case stage
+      switch (caseData.caseDetails.case_stage) {
+        case 'Settled':
+        case 'Closed':
+          baseConfidence = 85;
+          break;
+        case 'Trial':
+          baseConfidence = 75;
+          break;
+        case 'Discovery':
+          baseConfidence = 70;
+          break;
+        case 'Filed':
+          baseConfidence = 60;
+          break;
+        default:
+          baseConfidence = 65;
+      }
+      
+      // Adjust based on case type
+      switch (caseData.caseDetails.case_type) {
+        case 'Contract Dispute':
+          baseConfidence += 10;
+          break;
+        case 'Employment':
+          baseConfidence += 5;
+          break;
+        case 'Medical Malpractice':
+        case 'Product Liability':
+          baseConfidence -= 10;
+          break;
+        case 'Personal Injury':
+          baseConfidence -= 5;
+          break;
+      }
+      
+      // Ensure confidence is within reasonable bounds
+      return Math.max(30, Math.min(95, baseConfidence));
+    };
+
+    // Calculate stable potential value
+    const getStablePotentialValue = () => {
+      if (analysisData.predictions?.estimated_financial_outcome) {
+        return analysisData.predictions.estimated_financial_outcome;
+      }
+      if (analysisData.financialPrediction?.estimatedValue) {
+        return analysisData.financialPrediction.estimatedValue;
+      }
+      
+      // Base value on case type
+      const baseValues = {
+        'Contract Dispute': 150000,
+        'Employment': 100000,
+        'Personal Injury': 200000,
+        'Medical Malpractice': 500000,
+        'Product Liability': 300000,
+        'Property Dispute': 75000
+      };
+      
+      return baseValues[caseData.caseDetails.case_type as keyof typeof baseValues] || 125000;
+    };
+
+    // Calculate stable days active
+    const getStableDaysActive = () => {
+      if (analysisData.timelineEstimate?.estimatedDays) {
+        return analysisData.timelineEstimate.estimatedDays;
+      }
+      
+      const createdDate = new Date(caseData.caseDetails.created_at);
+      const currentDate = new Date();
+      return Math.floor((currentDate.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24));
+    };
+
+    return {
+      id: caseData.caseDetails.id,
+      title: caseData.caseDetails.case_name || `Case ${caseData.caseDetails.case_number || caseData.caseDetails.id}`,
+      status: caseData.caseDetails.case_stage === 'Settled' || caseData.caseDetails.case_stage === 'Dismissed' || caseData.caseDetails.case_stage === 'Closed' 
+        ? 'Closed' as const
+        : caseData.caseDetails.case_stage === 'Filed' || caseData.caseDetails.case_stage === 'Discovery' || caseData.caseDetails.case_stage === 'Trial'
+        ? 'Active' as const
+        : 'Pending' as const,
+      confidence: getStableConfidence(),
+      date: caseData.caseDetails.date_filed || caseData.caseDetails.created_at.split('T')[0],
+      risk: analysisData.predictions?.risk_level || 
+            analysisData.riskAssessment?.overallRisk ||
+            (caseData.caseDetails.case_type === 'Medical Malpractice' || caseData.caseDetails.case_type === 'Product Liability') 
+            ? 'High' as const
+            : (caseData.caseDetails.case_type === 'Contract Dispute' || caseData.caseDetails.case_type === 'Employment')
+            ? 'Low' as const
+            : 'Medium' as const,
+      potentialValue: getStablePotentialValue(),
+      daysActive: getStableDaysActive()
+    };
+  }, [caseData, analysisData]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
