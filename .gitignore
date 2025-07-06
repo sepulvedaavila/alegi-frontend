@@ -70,3 +70,4 @@ jspm_packages/
 .env.production.local   
 
 BACKEND_INTEGRATION_ANALYSIS.md
+IMPLEMENTATION_ANALYSIS.md
