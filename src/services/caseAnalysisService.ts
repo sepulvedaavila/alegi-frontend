@@ -14,29 +14,50 @@ const getJwtToken = (session: any) => {
 const makeAPICall = async (endpoint: string, session: any) => {
   const token = getJwtToken(session);
   if (!token) {
+    console.warn('No authentication token available for API call');
     throw new Error('No authentication token available');
   }
 
-  const response = await fetch(`${getBackendUrl()}${endpoint}`, {
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    }
-  });
+  try {
+    const response = await fetch(`${getBackendUrl()}${endpoint}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      }
+    });
 
-  if (!response.ok) {
-    if (response.status === 401) {
-      throw new Error('Authentication failed');
-    } else if (response.status === 403) {
-      throw new Error('Access denied');
-    } else if (response.status === 404) {
-      throw new Error('Analysis not found - case may not be processed yet');
-    } else {
-      throw new Error(`API error: ${response.statusText}`);
+    if (!response.ok) {
+      if (response.status === 401) {
+        console.warn('Authentication failed for API call:', endpoint);
+        throw new Error('Authentication failed');
+      } else if (response.status === 403) {
+        console.warn('Access denied for API call:', endpoint);
+        throw new Error('Access denied');
+      } else if (response.status === 404) {
+        console.log('Analysis not found for case - may not be processed yet:', endpoint);
+        throw new Error('Analysis not found - case may not be processed yet');
+      } else if (response.status === 406) {
+        console.log('Analysis not acceptable - case may not be processed yet:', endpoint);
+        throw new Error('Analysis not acceptable - case may not be processed yet');
+      } else {
+        console.error(`API error for ${endpoint}:`, response.status, response.statusText);
+        throw new Error(`API error: ${response.statusText}`);
+      }
     }
+
+    return await response.json();
+  } catch (error) {
+    // Handle network errors (CORS, connection issues, etc.)
+    if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+      console.warn('Network error for API call:', endpoint, error.message);
+      throw new Error('Network error - unable to reach analysis service');
+    }
+    
+    // Re-throw other errors
+    throw error;
   }
-
-  return await response.json();
 };
 
 // Case Analysis API Functions

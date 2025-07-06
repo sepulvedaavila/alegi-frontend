@@ -97,7 +97,9 @@ export const useCaseAnalysis = (caseId: string | undefined) => {
 
       // If we have pending analysis, set up polling
       const hasPendingAnalysis = allErrors.some(error => 
-        error.error?.message?.includes('not be processed yet')
+        error.error?.message?.includes('not be processed yet') ||
+        error.error?.message?.includes('not acceptable') ||
+        error.error?.message?.includes('Network error')
       );
 
       if (hasPendingAnalysis && !refreshInterval) {

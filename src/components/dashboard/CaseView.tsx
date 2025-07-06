@@ -70,7 +70,7 @@ const CaseView = () => {
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900 mb-4">Case Not Found</h1>
-          <p className="text-gray-600 mb-6">The case you're looking for doesn't exist.</p>
+          <p className="text-gray-600 mb-6">The case you're looking for doesn't exist or failed to load.</p>
           <Button onClick={() => navigate('/dashboard')}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Dashboard
@@ -80,9 +80,52 @@ const CaseView = () => {
     );
   }
 
+  // Check if there are any critical errors that prevent the component from rendering
+  const hasCriticalErrors = analysisData.errors.some(error => 
+    error.error?.message?.includes('Authentication failed') ||
+    error.error?.message?.includes('Access denied') ||
+    error.error?.message?.includes('Network error')
+  );
+
+  if (hasCriticalErrors) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Unable to Load Case Analysis</h1>
+          <p className="text-gray-600 mb-6">
+            There was an issue loading the case analysis. This may be due to authentication or network issues.
+          </p>
+          <div className="space-y-2">
+            <Button onClick={() => window.location.reload()}>
+              Retry
+            </Button>
+            <Button variant="outline" onClick={() => navigate('/dashboard')} className="ml-2">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Dashboard
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Transform the complete case data to match the expected format
   // Use useMemo to prevent recreation on every render
   const transformedCase = useMemo(() => {
+    // Early return if caseData is not available
+    if (!caseData || !caseData.caseDetails) {
+      return {
+        id: caseId || 'unknown',
+        title: 'Loading...',
+        status: 'Pending' as const,
+        confidence: 65,
+        date: new Date().toISOString().split('T')[0],
+        risk: 'Medium' as const,
+        potentialValue: 125000,
+        daysActive: 0
+      };
+    }
+
     // Calculate a stable confidence score based on case data and analysis
     const getStableConfidence = () => {
       // First priority: Use actual analysis data
@@ -171,9 +214,14 @@ const CaseView = () => {
         return analysisData.timelineEstimate.estimatedDays;
       }
       
-      const createdDate = new Date(caseData.caseDetails.created_at);
-      const currentDate = new Date();
-      return Math.floor((currentDate.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24));
+      try {
+        const createdDate = new Date(caseData.caseDetails.created_at);
+        const currentDate = new Date();
+        return Math.floor((currentDate.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24));
+      } catch (error) {
+        console.error('Error calculating days active:', error);
+        return 0;
+      }
     };
 
     return {
@@ -196,7 +244,7 @@ const CaseView = () => {
       potentialValue: getStablePotentialValue(),
       daysActive: getStableDaysActive()
     };
-  }, [caseData, analysisData]);
+  }, [caseData, analysisData, caseId]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -335,7 +383,7 @@ const CaseView = () => {
                           <div className="text-sm text-gray-600">Days Active</div>
                         </div>
                         <div className="text-center">
-                          <div className="text-2xl font-bold text-orange-600">{caseData.documents.length}</div>
+                          <div className="text-2xl font-bold text-orange-600">{caseData.documents?.length || 0}</div>
                           <div className="text-sm text-gray-600">Documents</div>
                         </div>
                       </div>

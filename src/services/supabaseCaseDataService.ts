@@ -9,8 +9,18 @@ export const fetchCasePredictions = async (caseId: string) => {
       .eq('case_id', caseId)
       .single();
 
-    if (error && error.code !== 'PGRST116') { // PGRST116 = no rows
-      throw error;
+    if (error) {
+      // Log the specific error for debugging
+      console.warn('Error fetching case predictions:', error);
+      
+      // If it's a no rows error, return null gracefully
+      if (error.code === 'PGRST116') {
+        console.log('No predictions found for case');
+        return null;
+      }
+      
+      // For other errors, still return null but log the error
+      return null;
     }
 
     return data;
@@ -28,8 +38,18 @@ export const fetchCaseAIEnrichment = async (caseId: string) => {
       .eq('case_id', caseId)
       .single();
 
-    if (error && error.code !== 'PGRST116') {
-      throw error;
+    if (error) {
+      // Log the specific error for debugging
+      console.warn('Error fetching AI enrichment:', error);
+      
+      // If it's a 406 error or table doesn't exist, return null gracefully
+      if (error.code === 'PGRST116' || error.message?.includes('406') || error.message?.includes('Not Acceptable')) {
+        console.log('AI enrichment table not available or case not processed yet');
+        return null;
+      }
+      
+      // For other errors, still return null but log the error
+      return null;
     }
 
     return data;
