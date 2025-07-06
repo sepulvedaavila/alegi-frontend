@@ -1,7 +1,13 @@
 
 import { Scale, TrendingUp, TrendingDown, DollarSign, Clock } from 'lucide-react';
 
-const SettlementVsTrialAnalysisWidget = ({ isComparison = false, caseData = null }) => {
+interface SettlementVsTrialAnalysisWidgetProps {
+  caseId?: string;
+  isComparison?: boolean;
+  caseData?: any;
+}
+
+const SettlementVsTrialAnalysisWidget = ({ caseId, isComparison = false, caseData = null }: SettlementVsTrialAnalysisWidgetProps) => {
 
   const renderAnalysis = (caseData: any, className = '') => {
     return (

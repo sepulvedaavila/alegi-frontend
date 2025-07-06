@@ -1,7 +1,13 @@
 import { AlertTriangle, Shield, TrendingUp, BarChart3 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 
-const CaseComplexityRiskWidget = ({ isComparison = false, caseData = null }) => {
+interface CaseComplexityRiskWidgetProps {
+  caseId?: string;
+  isComparison?: boolean;
+  caseData?: any;
+}
+
+const CaseComplexityRiskWidget = ({ caseId, isComparison = false, caseData = null }: CaseComplexityRiskWidgetProps) => {
 
   const renderRiskScore = (caseData: any, className = '') => {
     // Mock data - would come from API in real application

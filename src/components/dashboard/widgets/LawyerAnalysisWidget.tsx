@@ -2,7 +2,13 @@ import { User, Briefcase, TrendingUp, Award, Clock, DollarSign, BarChart3, Check
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 
-const LawyerAnalysisWidget = ({ isComparison = false, caseData = null }) => {
+interface LawyerAnalysisWidgetProps {
+  caseId?: string;
+  isComparison?: boolean;
+  caseData?: any;
+}
+
+const LawyerAnalysisWidget = ({ caseId, isComparison = false, caseData = null }: LawyerAnalysisWidgetProps) => {
   const renderLawyerAnalysis = (caseData: any, className = '') => {
     // Mock data - would come from API in real application
     const lawyerData = {

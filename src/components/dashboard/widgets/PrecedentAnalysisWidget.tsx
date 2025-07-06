@@ -1,7 +1,13 @@
 
 import { Scale, FileText, Info, BarChart3 } from 'lucide-react';
 
-const PrecedentAnalysisWidget = ({ isComparison = false, caseData = null }) => {
+interface PrecedentAnalysisWidgetProps {
+  caseId?: string;
+  isComparison?: boolean;
+  caseData?: any;
+}
+
+const PrecedentAnalysisWidget = ({ caseId, isComparison = false, caseData = null }: PrecedentAnalysisWidgetProps) => {
   
   // Mock data for similar cases
   const similarCases = [

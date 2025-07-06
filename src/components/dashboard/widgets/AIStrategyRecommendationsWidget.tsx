@@ -1,7 +1,13 @@
 import { Brain, Target, Lightbulb, TrendingUp, AlertTriangle, CheckCircle, Clock, DollarSign } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
-const AIStrategyRecommendationsWidget = ({ isComparison = false, caseData = null }) => {
+interface AIStrategyRecommendationsWidgetProps {
+  caseId?: string;
+  isComparison?: boolean;
+  caseData?: any;
+}
+
+const AIStrategyRecommendationsWidget = ({ caseId, isComparison = false, caseData = null }: AIStrategyRecommendationsWidgetProps) => {
   const renderStrategyRecommendations = (caseData: any, className = '') => {
     // Mock data - would come from API in real application
     const strategyData = {

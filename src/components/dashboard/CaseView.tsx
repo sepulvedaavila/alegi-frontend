@@ -10,6 +10,8 @@ import { useDashboard } from '@/contexts/DashboardContext';
 import { fetchCompleteCase } from '@/utils/case/caseFetching';
 import { useState, useEffect } from 'react';
 import { CompleteCase } from '@/utils/case/types';
+import { useCaseAnalysis } from '@/hooks/useCaseAnalysis';
+import AnalysisStatusIndicator from '@/components/dashboard/AnalysisStatusIndicator';
 
 // Import all the case insights widgets
 import PredictedOutcomeWidget from '@/components/dashboard/widgets/PredictedOutcomeWidget';
@@ -30,6 +32,9 @@ const CaseView = () => {
   const [caseData, setCaseData] = useState<CompleteCase | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [copyFeedback, setCopyFeedback] = useState(false);
+
+  // Add the case analysis hook
+  const analysisData = useCaseAnalysis(caseId);
 
   useEffect(() => {
     const loadCase = async () => {
@@ -84,13 +89,27 @@ const CaseView = () => {
       : caseData.caseDetails.case_stage === 'Filed' || caseData.caseDetails.case_stage === 'Discovery' || caseData.caseDetails.case_stage === 'Trial'
       ? 'Active' as const
       : 'Pending' as const,
-    confidence: Math.floor(Math.random() * 40) + 60, // Random between 60-100 for now
+    // Use real confidence from predictions or fallback
+    confidence: analysisData.predictions?.confidence_prediction_percentage || 
+                analysisData.probability?.confidence === 'high' ? 90 :
+                analysisData.probability?.confidence === 'medium' ? 70 :
+                analysisData.probability?.confidence === 'low' ? 50 :
+                Math.floor(Math.random() * 40) + 60,
     date: caseData.caseDetails.date_filed || caseData.caseDetails.created_at.split('T')[0],
-    risk: (caseData.caseDetails.case_type === 'Medical Malpractice' || caseData.caseDetails.case_type === 'Product Liability') 
-      ? 'High' as const
-      : (caseData.caseDetails.case_type === 'Contract Dispute' || caseData.caseDetails.case_type === 'Employment')
-      ? 'Low' as const
-      : 'Medium' as const
+    // Use real risk level from backend or fallback
+    risk: analysisData.predictions?.risk_level || 
+          analysisData.riskAssessment?.overallRisk ||
+          (caseData.caseDetails.case_type === 'Medical Malpractice' || caseData.caseDetails.case_type === 'Product Liability') 
+          ? 'High' as const
+          : (caseData.caseDetails.case_type === 'Contract Dispute' || caseData.caseDetails.case_type === 'Employment')
+          ? 'Low' as const
+          : 'Medium' as const,
+    // Add real financial data
+    potentialValue: analysisData.predictions?.estimated_financial_outcome || 
+                   analysisData.financialPrediction?.estimatedValue || 125000,
+    // Add real timeline data
+    daysActive: analysisData.timelineEstimate?.estimatedDays ||
+               Math.floor((new Date().getTime() - new Date(caseData.caseDetails.created_at).getTime()) / (1000 * 60 * 60 * 24))
   };
 
   const getStatusColor = (status: string) => {
@@ -213,14 +232,20 @@ const CaseView = () => {
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         <div className="text-center">
                           <div className="text-2xl font-bold text-blue-600">{transformedCase.confidence}%</div>
-                          <div className="text-sm text-gray-600">Confidence</div>
+                          <div className="text-sm text-gray-600">
+                            {analysisData.isAnalysisComplete ? 'AI Confidence' : 'Preliminary Score'}
+                          </div>
                         </div>
                         <div className="text-center">
-                          <div className="text-2xl font-bold text-green-600">$125K</div>
-                          <div className="text-sm text-gray-600">Potential Value</div>
+                          <div className="text-2xl font-bold text-green-600">
+                            ${Math.round(transformedCase.potentialValue / 1000)}K
+                          </div>
+                          <div className="text-sm text-gray-600">
+                            {analysisData.predictions?.estimated_financial_outcome ? 'AI Estimate' : 'Potential Value'}
+                          </div>
                         </div>
                         <div className="text-center">
-                          <div className="text-2xl font-bold text-purple-600">45</div>
+                          <div className="text-2xl font-bold text-purple-600">{transformedCase.daysActive}</div>
                           <div className="text-sm text-gray-600">Days Active</div>
                         </div>
                         <div className="text-center">
@@ -329,7 +354,7 @@ const CaseView = () => {
                     <CardTitle>Predicted Case Outcome</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <PredictedOutcomeWidget />
+                    <PredictedOutcomeWidget caseId={caseId} />
                   </CardContent>
                 </Card>
 
@@ -339,7 +364,7 @@ const CaseView = () => {
                     <CardTitle>Case Complexity & Risk Score</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <CaseComplexityRiskWidget />
+                    <CaseComplexityRiskWidget caseId={caseId} />
                   </CardContent>
                 </Card>
 
@@ -349,7 +374,7 @@ const CaseView = () => {
                     <CardTitle>Risk Assessment</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <RiskAssessmentWidget />
+                    <RiskAssessmentWidget caseId={caseId} />
                   </CardContent>
                 </Card>
 
@@ -359,7 +384,7 @@ const CaseView = () => {
                     <CardTitle>Precedent Analysis</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <PrecedentAnalysisWidget />
+                    <PrecedentAnalysisWidget caseId={caseId} />
                   </CardContent>
                 </Card>
 
@@ -370,9 +395,9 @@ const CaseView = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-                      <JudgeAnalysisWidget />
+                      <JudgeAnalysisWidget caseId={caseId} />
                       <div className="border-t pt-4">
-                        <LawyerAnalysisWidget />
+                        <LawyerAnalysisWidget caseId={caseId} />
                       </div>
                     </div>
                   </CardContent>
@@ -384,7 +409,7 @@ const CaseView = () => {
                     <CardTitle>Settlement vs Trial Analysis</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <SettlementVsTrialAnalysisWidget />
+                    <SettlementVsTrialAnalysisWidget caseId={caseId} />
                   </CardContent>
                 </Card>
 
@@ -394,9 +419,30 @@ const CaseView = () => {
                     <CardTitle>AI Strategy Recommendations</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <AIStrategyRecommendationsWidget />
+                    <AIStrategyRecommendationsWidget caseId={caseId} />
                   </CardContent>
                 </Card>
+
+                {/* Analysis Status Indicator */}
+                {!analysisData.isAnalysisComplete && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center">
+                        <Clock className="mr-2 h-5 w-5" />
+                        Analysis Status
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <AnalysisStatusIndicator
+                        status={analysisData.analysisStatus as 'loading' | 'pending' | 'partial' | 'complete' | 'failed'}
+                        hasAnyData={analysisData.hasAnyData}
+                        errors={analysisData.errors}
+                        onRefresh={analysisData.refreshAnalysis}
+                        lastUpdated={analysisData.lastUpdated}
+                      />
+                    </CardContent>
+                  </Card>
+                )}
 
                 {/* Fact Strength Analysis */}
                 <Card>
