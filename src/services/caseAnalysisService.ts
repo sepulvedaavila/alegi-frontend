@@ -15,7 +15,7 @@ const makeAPICall = async (endpoint: string, session: any) => {
   const token = getJwtToken(session);
   if (!token) {
     console.warn('No authentication token available for API call');
-    throw new Error('No authentication token available');
+    return null;
   }
 
   try {
@@ -31,19 +31,19 @@ const makeAPICall = async (endpoint: string, session: any) => {
     if (!response.ok) {
       if (response.status === 401) {
         console.warn('Authentication failed for API call:', endpoint);
-        throw new Error('Authentication failed');
+        return null;
       } else if (response.status === 403) {
         console.warn('Access denied for API call:', endpoint);
-        throw new Error('Access denied');
+        return null;
       } else if (response.status === 404) {
         console.log('Analysis not found for case - may not be processed yet:', endpoint);
-        throw new Error('Analysis not found - case may not be processed yet');
+        return null;
       } else if (response.status === 406) {
         console.log('Analysis not acceptable - case may not be processed yet:', endpoint);
-        throw new Error('Analysis not acceptable - case may not be processed yet');
+        return null;
       } else {
-        console.error(`API error for ${endpoint}:`, response.status, response.statusText);
-        throw new Error(`API error: ${response.statusText}`);
+        console.warn(`API error for ${endpoint}:`, response.status, response.statusText);
+        return null;
       }
     }
 
@@ -52,11 +52,12 @@ const makeAPICall = async (endpoint: string, session: any) => {
     // Handle network errors (CORS, connection issues, etc.)
     if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
       console.warn('Network error for API call:', endpoint, error.message);
-      throw new Error('Network error - unable to reach analysis service');
+      return null;
     }
     
-    // Re-throw other errors
-    throw error;
+    // Return null for other errors instead of throwing
+    console.warn('Error in API call:', endpoint, error);
+    return null;
   }
 };
 
@@ -65,8 +66,8 @@ export const fetchCaseProbabilityAnalysis = async (caseId: string, session: any)
   try {
     return await makeAPICall(`/api/cases/${caseId}/probability`, session);
   } catch (error) {
-    console.error('Error fetching probability analysis:', error);
-    throw error;
+    console.warn('Error fetching probability analysis:', error);
+    return null;
   }
 };
 
@@ -74,8 +75,8 @@ export const fetchCaseRiskAssessment = async (caseId: string, session: any) => {
   try {
     return await makeAPICall(`/api/cases/${caseId}/risk-assessment`, session);
   } catch (error) {
-    console.error('Error fetching risk assessment:', error);
-    throw error;
+    console.warn('Error fetching risk assessment:', error);
+    return null;
   }
 };
 
@@ -83,8 +84,8 @@ export const fetchCasePrecedents = async (caseId: string, session: any) => {
   try {
     return await makeAPICall(`/api/cases/${caseId}/precedents`, session);
   } catch (error) {
-    console.error('Error fetching precedents:', error);
-    throw error;
+    console.warn('Error fetching precedents:', error);
+    return null;
   }
 };
 
@@ -92,8 +93,8 @@ export const fetchJudgeAnalysis = async (caseId: string, session: any) => {
   try {
     return await makeAPICall(`/api/cases/${caseId}/judge-trends`, session);
   } catch (error) {
-    console.error('Error fetching judge analysis:', error);
-    throw error;
+    console.warn('Error fetching judge analysis:', error);
+    return null;
   }
 };
 
@@ -101,8 +102,8 @@ export const fetchSettlementAnalysis = async (caseId: string, session: any) => {
   try {
     return await makeAPICall(`/api/cases/${caseId}/settlement-analysis`, session);
   } catch (error) {
-    console.error('Error fetching settlement analysis:', error);
-    throw error;
+    console.warn('Error fetching settlement analysis:', error);
+    return null;
   }
 };
 
@@ -110,8 +111,8 @@ export const fetchFinancialPrediction = async (caseId: string, session: any) => 
   try {
     return await makeAPICall(`/api/cases/${caseId}/financial-prediction`, session);
   } catch (error) {
-    console.error('Error fetching financial prediction:', error);
-    throw error;
+    console.warn('Error fetching financial prediction:', error);
+    return null;
   }
 };
 
@@ -119,8 +120,8 @@ export const fetchTimelineEstimate = async (caseId: string, session: any) => {
   try {
     return await makeAPICall(`/api/cases/${caseId}/timeline-estimate`, session);
   } catch (error) {
-    console.error('Error fetching timeline estimate:', error);
-    throw error;
+    console.warn('Error fetching timeline estimate:', error);
+    return null;
   }
 };
 
@@ -128,8 +129,8 @@ export const fetchCostEstimate = async (caseId: string, session: any) => {
   try {
     return await makeAPICall(`/api/cases/${caseId}/cost-estimate`, session);
   } catch (error) {
-    console.error('Error fetching cost estimate:', error);
-    throw error;
+    console.warn('Error fetching cost estimate:', error);
+    return null;
   }
 };
 
@@ -165,19 +166,20 @@ export const fetchCompleteAnalysis = async (caseId: string, session: any) => {
       financialPrediction: financialPrediction.status === 'fulfilled' ? financialPrediction.value : null,
       timelineEstimate: timelineEstimate.status === 'fulfilled' ? timelineEstimate.value : null,
       costEstimate: costEstimate.status === 'fulfilled' ? costEstimate.value : null,
-      errors: [
-        probability.status === 'rejected' ? { type: 'probability', error: probability.reason } : null,
-        riskAssessment.status === 'rejected' ? { type: 'riskAssessment', error: riskAssessment.reason } : null,
-        precedents.status === 'rejected' ? { type: 'precedents', error: precedents.reason } : null,
-        judgeAnalysis.status === 'rejected' ? { type: 'judgeAnalysis', error: judgeAnalysis.reason } : null,
-        settlementAnalysis.status === 'rejected' ? { type: 'settlementAnalysis', error: settlementAnalysis.reason } : null,
-        financialPrediction.status === 'rejected' ? { type: 'financialPrediction', error: financialPrediction.reason } : null,
-        timelineEstimate.status === 'rejected' ? { type: 'timelineEstimate', error: timelineEstimate.reason } : null,
-        costEstimate.status === 'rejected' ? { type: 'costEstimate', error: costEstimate.reason } : null
-      ].filter(Boolean)
+      errors: [] // No errors since we return null instead of throwing
     };
   } catch (error) {
-    console.error('Error fetching complete analysis:', error);
-    throw error;
+    console.warn('Error fetching complete analysis:', error);
+    return {
+      probability: null,
+      riskAssessment: null,
+      precedents: null,
+      judgeAnalysis: null,
+      settlementAnalysis: null,
+      financialPrediction: null,
+      timelineEstimate: null,
+      costEstimate: null,
+      errors: [{ type: 'general', error }]
+    };
   }
 }; 

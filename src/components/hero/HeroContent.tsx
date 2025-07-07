@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -192,9 +191,11 @@ const HeroContent = () => {
       <Dialog open={showModal} onOpenChange={setShowModal}>
         <DialogContent className="bg-white rounded-2xl shadow-xl p-4 md:p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-2xl font-bold text-center">Join Our Waitlist</DialogTitle>
-            <DialogDescription className="text-center">
-              Get early access to our legal prediction platform
+            <DialogTitle className="text-xl font-semibold text-gray-900">
+              Get Started with Alegi
+            </DialogTitle>
+            <DialogDescription className="text-gray-600">
+              Fill out the form below to begin your case analysis
             </DialogDescription>
           </DialogHeader>
           

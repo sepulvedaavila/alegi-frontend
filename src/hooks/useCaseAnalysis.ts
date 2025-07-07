@@ -95,28 +95,30 @@ export const useCaseAnalysis = (caseId: string | undefined) => {
         lastUpdated: new Date()
       });
 
-      // If we have pending analysis, set up polling
-      const hasPendingAnalysis = allErrors.some(error => 
-        error.error?.message?.includes('not be processed yet') ||
-        error.error?.message?.includes('not acceptable') ||
-        error.error?.message?.includes('Network error')
+      // Only set up polling if we have no data at all and the case is new
+      const hasAnyData = !!(apiResult?.probability || apiResult?.riskAssessment || 
+                           supabaseResult?.predictions || supabaseResult?.enrichment);
+      
+      const hasNetworkErrors = allErrors.some(error => 
+        error.error?.message?.includes('Network error') ||
+        error.error?.message?.includes('Failed to fetch')
       );
 
-      if (hasPendingAnalysis && !refreshInterval) {
-        console.log('Case analysis pending, setting up polling...');
+      if (!hasAnyData && !hasNetworkErrors && !refreshInterval) {
+        console.log('No analysis data available, setting up polling...');
         const interval = setInterval(() => {
           fetchAnalysisData(false); // Refresh without loading indicator
-        }, 15000); // Poll every 15 seconds
+        }, 30000); // Poll every 30 seconds instead of 15
 
         setRefreshInterval(interval);
-      } else if (!hasPendingAnalysis && refreshInterval) {
-        // Clear polling if analysis is complete
+      } else if ((hasAnyData || hasNetworkErrors) && refreshInterval) {
+        // Clear polling if we have data or network errors
         clearInterval(refreshInterval);
         setRefreshInterval(null);
       }
 
     } catch (error) {
-      console.error('Error fetching case analysis:', error);
+      console.warn('Error fetching case analysis:', error);
       setData(prev => ({
         ...prev,
         isLoading: false,

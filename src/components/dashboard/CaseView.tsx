@@ -55,11 +55,19 @@ const CaseView = () => {
     loadCase();
   }, [caseId]);
 
-  if (isLoading) {
+  if (isLoading || analysisData.isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
-          <div className="text-xl font-semibold">Loading case...</div>
+          <div className="text-xl font-semibold mb-4">Loading case...</div>
+          {analysisData.isLoading && (
+            <div className="text-sm text-gray-600">
+              <div className="flex items-center justify-center space-x-2">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+                <span>Loading analysis data...</span>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -109,6 +117,9 @@ const CaseView = () => {
     );
   }
 
+  // Check if analysis data is not available but case data is loaded
+  const hasNoAnalysisData = !analysisData.hasAnyData && !analysisData.isLoading && analysisData.errors.length === 0;
+
   // Transform the complete case data to match the expected format
   // Use useMemo to prevent recreation on every render
   const transformedCase = useMemo(() => {
@@ -126,16 +137,25 @@ const CaseView = () => {
       };
     }
 
+    // Ensure analysisData is defined with safe defaults
+    const safeAnalysisData = analysisData || {
+      predictions: null,
+      probability: null,
+      riskAssessment: null,
+      financialPrediction: null,
+      timelineEstimate: null
+    };
+
     // Calculate a stable confidence score based on case data and analysis
     const getStableConfidence = () => {
       // First priority: Use actual analysis data
-      if (analysisData.predictions?.confidence_prediction_percentage) {
-        return analysisData.predictions.confidence_prediction_percentage;
+      if (safeAnalysisData.predictions?.confidence_prediction_percentage) {
+        return safeAnalysisData.predictions.confidence_prediction_percentage;
       }
       
       // Second priority: Use probability confidence levels
-      if (analysisData.probability?.confidence) {
-        switch (analysisData.probability.confidence) {
+      if (safeAnalysisData.probability?.confidence) {
+        switch (safeAnalysisData.probability.confidence) {
           case 'high': return 90;
           case 'medium': return 70;
           case 'low': return 50;
@@ -188,11 +208,11 @@ const CaseView = () => {
 
     // Calculate stable potential value
     const getStablePotentialValue = () => {
-      if (analysisData.predictions?.estimated_financial_outcome) {
-        return analysisData.predictions.estimated_financial_outcome;
+      if (safeAnalysisData.predictions?.estimated_financial_outcome) {
+        return safeAnalysisData.predictions.estimated_financial_outcome;
       }
-      if (analysisData.financialPrediction?.estimatedValue) {
-        return analysisData.financialPrediction.estimatedValue;
+      if (safeAnalysisData.financialPrediction?.estimatedValue) {
+        return safeAnalysisData.financialPrediction.estimatedValue;
       }
       
       // Base value on case type
@@ -210,8 +230,8 @@ const CaseView = () => {
 
     // Calculate stable days active
     const getStableDaysActive = () => {
-      if (analysisData.timelineEstimate?.estimatedDays) {
-        return analysisData.timelineEstimate.estimatedDays;
+      if (safeAnalysisData.timelineEstimate?.estimatedDays) {
+        return safeAnalysisData.timelineEstimate.estimatedDays;
       }
       
       try {
@@ -234,8 +254,8 @@ const CaseView = () => {
         : 'Pending' as const,
       confidence: getStableConfidence(),
       date: caseData.caseDetails.date_filed || caseData.caseDetails.created_at.split('T')[0],
-      risk: analysisData.predictions?.risk_level || 
-            analysisData.riskAssessment?.overallRisk ||
+      risk: safeAnalysisData.predictions?.risk_level || 
+            safeAnalysisData.riskAssessment?.overallRisk ||
             (caseData.caseDetails.case_type === 'Medical Malpractice' || caseData.caseDetails.case_type === 'Product Liability') 
             ? 'High' as const
             : (caseData.caseDetails.case_type === 'Contract Dispute' || caseData.caseDetails.case_type === 'Employment')
@@ -338,6 +358,30 @@ const CaseView = () => {
               </div>
             </div>
           </div>
+
+          {/* Analysis Status Notification */}
+          {hasNoAnalysisData && (
+            <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-start">
+                <Clock className="h-5 w-5 text-blue-500 mt-0.5 mr-3" />
+                <div className="flex-1">
+                  <h3 className="text-sm font-medium text-blue-900">Analysis in Progress</h3>
+                  <p className="text-sm text-blue-700 mt-1">
+                    Your case has been submitted for AI analysis. This typically takes 2-5 minutes to complete. 
+                    You can view the basic case information below while the analysis is being processed.
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={analysisData.refreshAnalysis}
+                  className="ml-4"
+                >
+                  Refresh
+                </Button>
+              </div>
+            </div>
+          )}
 
           {/* Main Content */}
           <Tabs defaultValue="overview" className="space-y-6">

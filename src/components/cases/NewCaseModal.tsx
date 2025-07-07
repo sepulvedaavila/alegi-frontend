@@ -1,4 +1,4 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { FormProvider } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { ChevronRight, ChevronLeft, Send } from 'lucide-react';
@@ -88,6 +88,9 @@ const NewCaseModal = ({ isOpen, onClose }: NewCaseModalProps) => {
           <DialogTitle className="text-3xl font-bold text-gray-800 dark:text-gray-100 text-center">
             New Case Filing
           </DialogTitle>
+          <DialogDescription className="text-center text-gray-600 dark:text-gray-400">
+            Complete the form below to submit your case for AI analysis
+          </DialogDescription>
         </DialogHeader>
         
         <div className="space-y-6 px-4 md:px-6">

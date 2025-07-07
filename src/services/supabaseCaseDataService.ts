@@ -13,9 +13,9 @@ export const fetchCasePredictions = async (caseId: string) => {
       // Log the specific error for debugging
       console.warn('Error fetching case predictions:', error);
       
-      // If it's a no rows error, return null gracefully
-      if (error.code === 'PGRST116') {
-        console.log('No predictions found for case');
+      // If it's a no rows error or table doesn't exist, return null gracefully
+      if (error.code === 'PGRST116' || error.code === '42P01' || error.message?.includes('406')) {
+        console.log('No predictions found for case or table not available');
         return null;
       }
       
@@ -42,8 +42,8 @@ export const fetchCaseAIEnrichment = async (caseId: string) => {
       // Log the specific error for debugging
       console.warn('Error fetching AI enrichment:', error);
       
-      // If it's a 406 error or table doesn't exist, return null gracefully
-      if (error.code === 'PGRST116' || error.message?.includes('406') || error.message?.includes('Not Acceptable')) {
+      // If it's a 406 error, table doesn't exist, or no rows, return null gracefully
+      if (error.code === 'PGRST116' || error.code === '42P01' || error.message?.includes('406') || error.message?.includes('Not Acceptable')) {
         console.log('AI enrichment table not available or case not processed yet');
         return null;
       }
@@ -61,7 +61,7 @@ export const fetchCaseAIEnrichment = async (caseId: string) => {
 
 export const fetchSimilarCases = async (caseId: string) => {
   try {
-    // Use precedent_cases table instead of similar_cases
+    // Try precedent_cases table
     const { data, error } = await supabase
       .from('precedent_cases')
       .select('*')
@@ -70,7 +70,8 @@ export const fetchSimilarCases = async (caseId: string) => {
       .limit(10);
 
     if (error) {
-      throw error;
+      console.warn('Error fetching similar cases:', error);
+      return [];
     }
 
     return data || [];
@@ -90,7 +91,8 @@ export const fetchCaseAnalysis = async (caseId: string, analysisType?: string) =
       .order('created_at', { ascending: false });
 
     if (error) {
-      throw error;
+      console.warn('Error fetching case analysis:', error);
+      return [];
     }
 
     return data || [];
@@ -100,7 +102,7 @@ export const fetchCaseAnalysis = async (caseId: string, analysisType?: string) =
   }
 };
 
-// Comprehensive case data fetch
+// Comprehensive case data fetch with better error handling
 export const fetchComprehensiveCaseData = async (caseId: string) => {
   try {
     const [predictions, enrichment, similarCases, analysis] = await Promise.allSettled([
@@ -110,20 +112,37 @@ export const fetchComprehensiveCaseData = async (caseId: string) => {
       fetchCaseAnalysis(caseId)
     ]);
 
+    const errors = [];
+    
+    // Only add errors for actual failures, not missing data
+    if (predictions.status === 'rejected') {
+      errors.push({ type: 'predictions', error: predictions.reason });
+    }
+    if (enrichment.status === 'rejected') {
+      errors.push({ type: 'enrichment', error: enrichment.reason });
+    }
+    if (similarCases.status === 'rejected') {
+      errors.push({ type: 'similarCases', error: similarCases.reason });
+    }
+    if (analysis.status === 'rejected') {
+      errors.push({ type: 'analysis', error: analysis.reason });
+    }
+
     return {
       predictions: predictions.status === 'fulfilled' ? predictions.value : null,
       enrichment: enrichment.status === 'fulfilled' ? enrichment.value : null,
       similarCases: similarCases.status === 'fulfilled' ? similarCases.value : [],
       analysis: analysis.status === 'fulfilled' ? analysis.value : [],
-      errors: [
-        predictions.status === 'rejected' ? { type: 'predictions', error: predictions.reason } : null,
-        enrichment.status === 'rejected' ? { type: 'enrichment', error: enrichment.reason } : null,
-        similarCases.status === 'rejected' ? { type: 'similarCases', error: similarCases.reason } : null,
-        analysis.status === 'rejected' ? { type: 'analysis', error: analysis.reason } : null
-      ].filter(Boolean)
+      errors
     };
   } catch (error) {
     console.error('Error fetching comprehensive case data:', error);
-    throw error;
+    return {
+      predictions: null,
+      enrichment: null,
+      similarCases: [],
+      analysis: [],
+      errors: [{ type: 'general', error }]
+    };
   }
 }; 
