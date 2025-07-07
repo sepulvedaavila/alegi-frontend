@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useDashboard } from '@/contexts/DashboardContext';
 import { fetchCompleteCase } from '@/utils/case/caseFetching';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, Component, ReactNode } from 'react';
 import { CompleteCase } from '@/utils/case/types';
 import { useCaseAnalysis } from '@/hooks/useCaseAnalysis';
 import AnalysisStatusIndicator from '@/components/dashboard/AnalysisStatusIndicator';
@@ -24,6 +24,46 @@ import SettlementVsTrialAnalysisWidget from '@/components/dashboard/widgets/Sett
 import AIStrategyRecommendationsWidget from '@/components/dashboard/widgets/AIStrategyRecommendationsWidget';
 import FactStrengthAnalysisWidget from '@/components/dashboard/widgets/FactStrengthAnalysisWidget';
 import AverageTimeResolutionWidget from '@/components/dashboard/widgets/AverageTimeResolutionWidget';
+
+// Simple Error Boundary Component
+class CaseViewErrorBoundary extends Component<
+  { children: ReactNode; onError: (error: Error) => void },
+  { hasError: boolean }
+> {
+  constructor(props: { children: ReactNode; onError: (error: Error) => void }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error) {
+    console.error('CaseView Error Boundary caught an error:', error);
+    this.props.onError(error);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex min-h-screen items-center justify-center">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-gray-900 mb-4">Something went wrong</h1>
+            <p className="text-gray-600 mb-6">
+              There was an error rendering the case view. Please try refreshing the page.
+            </p>
+            <Button onClick={() => window.location.reload()}>
+              Refresh Page
+            </Button>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
 
 const CaseView = () => {
   const { caseId } = useParams<{ caseId: string }>();
@@ -138,12 +178,12 @@ const CaseView = () => {
     }
 
     // Ensure analysisData is defined with safe defaults
-    const safeAnalysisData = analysisData || {
-      predictions: null,
-      probability: null,
-      riskAssessment: null,
-      financialPrediction: null,
-      timelineEstimate: null
+    const safeAnalysisData = {
+      predictions: analysisData?.predictions || null,
+      probability: analysisData?.probability || null,
+      riskAssessment: analysisData?.riskAssessment || null,
+      financialPrediction: analysisData?.financialPrediction || null,
+      timelineEstimate: analysisData?.timelineEstimate || null
     };
 
     // Calculate a stable confidence score based on case data and analysis
@@ -264,7 +304,21 @@ const CaseView = () => {
       potentialValue: getStablePotentialValue(),
       daysActive: getStableDaysActive()
     };
-  }, [caseData, analysisData, caseId]);
+  }, [
+    caseData?.caseDetails?.id,
+    caseData?.caseDetails?.case_name,
+    caseData?.caseDetails?.case_number,
+    caseData?.caseDetails?.case_stage,
+    caseData?.caseDetails?.case_type,
+    caseData?.caseDetails?.date_filed,
+    caseData?.caseDetails?.created_at,
+    analysisData?.predictions,
+    analysisData?.probability,
+    analysisData?.riskAssessment,
+    analysisData?.financialPrediction,
+    analysisData?.timelineEstimate,
+    caseId
+  ]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -295,140 +349,467 @@ const CaseView = () => {
     }
   };
 
-  return (
-    <div className="min-h-full bg-gray-50">
-      <div className="py-6">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Header */}
-          <div className="mb-8">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <Button
-                  variant="ghost"
-                  onClick={() => navigate('/dashboard')}
-                  className="p-2"
-                >
-                  <ArrowLeft className="h-5 w-5" />
-                </Button>
-                <div>
-                  <h1 className="text-3xl font-bold text-gray-900">{transformedCase.title}</h1>
-                  <div className="flex items-center space-x-2">
-                    <p className="text-gray-600">Case ID: {transformedCase.id}</p>
-                    <div className="relative">
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={copyCaseId}
-                              className="h-6 w-6 p-0 hover:bg-gray-100"
-                            >
-                              <Copy className="h-3 w-3" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Copy Case ID to clipboard</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                      {copyFeedback && (
-                        <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-green-100 text-green-800 text-xs px-2 py-1 rounded shadow-sm whitespace-nowrap z-10 animate-in fade-in-0 slide-in-from-top-2 duration-200">
-                          ✓ Copied to clipboard!
-                        </div>
-                      )}
+  // Wrap the main render in a try-catch to prevent blank pages
+  try {
+    return (
+      <div className="min-h-full bg-gray-50">
+        <div className="py-6">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            {/* Header */}
+            <div className="mb-8">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <Button
+                    variant="ghost"
+                    onClick={() => navigate('/dashboard')}
+                    className="p-2"
+                  >
+                    <ArrowLeft className="h-5 w-5" />
+                  </Button>
+                  <div>
+                    <h1 className="text-3xl font-bold text-gray-900">{transformedCase.title}</h1>
+                    <div className="flex items-center space-x-2">
+                      <p className="text-gray-600">Case ID: {transformedCase.id}</p>
+                      <div className="relative">
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={copyCaseId}
+                                className="h-6 w-6 p-0 hover:bg-gray-100"
+                              >
+                                <Copy className="h-3 w-3" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Copy Case ID to clipboard</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                        {copyFeedback && (
+                          <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-green-100 text-green-800 text-xs px-2 py-1 rounded shadow-sm whitespace-nowrap z-10 animate-in fade-in-0 slide-in-from-top-2 duration-200">
+                            ✓ Copied to clipboard!
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-              <div className="flex items-center space-x-3">
-                <Badge className={getStatusColor(transformedCase.status)}>
-                  {transformedCase.status}
-                </Badge>
-                <Badge className={getRiskColor(transformedCase.risk)}>
-                  {transformedCase.risk} Risk
-                </Badge>
-                <Button
-                  variant="ghost"
-                  onClick={() => toggleFavorite(transformedCase.id)}
-                  className={isFavorite(transformedCase.id) ? 'text-yellow-500' : 'text-gray-400'}
-                >
-                  ★
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          {/* Analysis Status Notification */}
-          {hasNoAnalysisData && (
-            <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <div className="flex items-start">
-                <Clock className="h-5 w-5 text-blue-500 mt-0.5 mr-3" />
-                <div className="flex-1">
-                  <h3 className="text-sm font-medium text-blue-900">Analysis in Progress</h3>
-                  <p className="text-sm text-blue-700 mt-1">
-                    Your case has been submitted for AI analysis. This typically takes 2-5 minutes to complete. 
-                    You can view the basic case information below while the analysis is being processed.
-                  </p>
+                <div className="flex items-center space-x-3">
+                  <Badge className={getStatusColor(transformedCase.status)}>
+                    {transformedCase.status}
+                  </Badge>
+                  <Badge className={getRiskColor(transformedCase.risk)}>
+                    {transformedCase.risk} Risk
+                  </Badge>
+                  <Button
+                    variant="ghost"
+                    onClick={() => toggleFavorite(transformedCase.id)}
+                    className={isFavorite(transformedCase.id) ? 'text-yellow-500' : 'text-gray-400'}
+                  >
+                    ★
+                  </Button>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={analysisData.refreshAnalysis}
-                  className="ml-4"
-                >
-                  Refresh
-                </Button>
               </div>
             </div>
-          )}
 
-          {/* Main Content */}
-          <Tabs defaultValue="overview" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-6">
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="insights">Insights</TabsTrigger>
-              <TabsTrigger value="timeline">Timeline</TabsTrigger>
-              <TabsTrigger value="documents">Documents</TabsTrigger>
-              <TabsTrigger value="analytics">Analytics</TabsTrigger>
-              <TabsTrigger value="parties">Parties</TabsTrigger>
-            </TabsList>
+            {/* Analysis Status Notification */}
+            {hasNoAnalysisData && (
+              <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-start">
+                  <Clock className="h-5 w-5 text-blue-500 mt-0.5 mr-3" />
+                  <div className="flex-1">
+                    <h3 className="text-sm font-medium text-blue-900">Analysis in Progress</h3>
+                    <p className="text-sm text-blue-700 mt-1">
+                      Your case has been submitted for AI analysis. This typically takes 2-5 minutes to complete. 
+                      You can view the basic case information below while the analysis is being processed.
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={analysisData.refreshAnalysis}
+                    className="ml-4"
+                  >
+                    Refresh
+                  </Button>
+                </div>
+              </div>
+            )}
 
-            {/* Overview Tab */}
-            <TabsContent value="overview" className="space-y-6">
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Key Metrics */}
-                <div className="lg:col-span-2 space-y-6">
+            {/* Main Content */}
+            <Tabs defaultValue="overview" className="space-y-6">
+              <TabsList className="grid w-full grid-cols-6">
+                <TabsTrigger value="overview">Overview</TabsTrigger>
+                <TabsTrigger value="insights">Insights</TabsTrigger>
+                <TabsTrigger value="timeline">Timeline</TabsTrigger>
+                <TabsTrigger value="documents">Documents</TabsTrigger>
+                <TabsTrigger value="analytics">Analytics</TabsTrigger>
+                <TabsTrigger value="parties">Parties</TabsTrigger>
+              </TabsList>
+
+              {/* Overview Tab */}
+              <TabsContent value="overview" className="space-y-6">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  {/* Key Metrics */}
+                  <div className="lg:col-span-2 space-y-6">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center">
+                          <BarChart3 className="mr-2 h-5 w-5" />
+                          Case Metrics
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                          <div className="text-center">
+                            <div className="text-2xl font-bold text-blue-600">{transformedCase.confidence}%</div>
+                            <div className="text-sm text-gray-600">
+                              {analysisData.isAnalysisComplete ? 'AI Confidence' : 'Preliminary Score'}
+                            </div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-2xl font-bold text-green-600">
+                              ${Math.round(transformedCase.potentialValue / 1000)}K
+                            </div>
+                            <div className="text-sm text-gray-600">
+                              {analysisData.predictions?.estimated_financial_outcome ? 'AI Estimate' : 'Potential Value'}
+                            </div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-2xl font-bold text-purple-600">{transformedCase.daysActive}</div>
+                            <div className="text-sm text-gray-600">Days Active</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-2xl font-bold text-orange-600">{caseData.documents?.length || 0}</div>
+                            <div className="text-sm text-gray-600">Documents</div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Case Progress</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-4">
+                          <div>
+                            <div className="flex justify-between text-sm mb-2">
+                              <span>Overall Progress</span>
+                              <span>{transformedCase.confidence}%</span>
+                            </div>
+                            <Progress value={transformedCase.confidence} className="h-2" />
+                          </div>
+                          <div className="grid grid-cols-2 gap-4 text-sm">
+                            <div className="flex items-center">
+                              <CheckCircle className="mr-2 h-4 w-4 text-green-500" />
+                              <span>Initial Filing</span>
+                            </div>
+                            <div className="flex items-center">
+                              <CheckCircle className="mr-2 h-4 w-4 text-green-500" />
+                              <span>Discovery</span>
+                            </div>
+                            <div className="flex items-center">
+                              <Clock className="mr-2 h-4 w-4 text-yellow-500" />
+                              <span>Pre-trial</span>
+                            </div>
+                            <div className="flex items-center">
+                              <AlertTriangle className="mr-2 h-4 w-4 text-gray-400" />
+                              <span>Trial</span>
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Quick Actions */}
+                  <div className="space-y-6">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Quick Actions</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <Button className="w-full justify-start" variant="outline">
+                          <FileText className="mr-2 h-4 w-4" />
+                          Add Document
+                        </Button>
+                        <Button className="w-full justify-start" variant="outline">
+                          <Calendar className="mr-2 h-4 w-4" />
+                          Schedule Event
+                        </Button>
+                        <Button className="w-full justify-start" variant="outline">
+                          <User className="mr-2 h-4 w-4" />
+                          Add Party
+                        </Button>
+                        <Button className="w-full justify-start" variant="outline">
+                          <DollarSign className="mr-2 h-4 w-4" />
+                          Update Settlement
+                        </Button>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Case Details</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-3 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Filed Date:</span>
+                          <span>{transformedCase.date}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Court:</span>
+                          <span>Superior Court</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Judge:</span>
+                          <span>Hon. Sarah Johnson</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Case Type:</span>
+                          <span>Civil Litigation</span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </div>
+              </TabsContent>
+
+              {/* Insights Tab */}
+              <TabsContent value="insights" className="space-y-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Predicted Case Outcome */}
                   <Card>
                     <CardHeader>
-                      <CardTitle className="flex items-center">
-                        <BarChart3 className="mr-2 h-5 w-5" />
-                        Case Metrics
-                      </CardTitle>
+                      <CardTitle>Predicted Case Outcome</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div className="text-center">
-                          <div className="text-2xl font-bold text-blue-600">{transformedCase.confidence}%</div>
-                          <div className="text-sm text-gray-600">
-                            {analysisData.isAnalysisComplete ? 'AI Confidence' : 'Preliminary Score'}
+                      <PredictedOutcomeWidget caseId={caseId} />
+                    </CardContent>
+                  </Card>
+
+                  {/* Case Complexity & Risk Score */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Case Complexity & Risk Score</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <CaseComplexityRiskWidget caseId={caseId} />
+                    </CardContent>
+                  </Card>
+
+                  {/* Risk Assessment */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Risk Assessment</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <RiskAssessmentWidget caseId={caseId} />
+                    </CardContent>
+                  </Card>
+
+                  {/* Precedent Analysis */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Precedent Analysis</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <PrecedentAnalysisWidget caseId={caseId} />
+                    </CardContent>
+                  </Card>
+
+                  {/* Judge & Lawyer Analysis */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Judge & Lawyer Analysis</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        <JudgeAnalysisWidget caseId={caseId} />
+                        <div className="border-t pt-4">
+                          <LawyerAnalysisWidget caseId={caseId} />
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Settlement vs Trial Analysis */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Settlement vs Trial Analysis</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <SettlementVsTrialAnalysisWidget caseId={caseId} />
+                    </CardContent>
+                  </Card>
+
+                  {/* AI Strategy Recommendations */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>AI Strategy Recommendations</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <AIStrategyRecommendationsWidget caseId={caseId} />
+                    </CardContent>
+                  </Card>
+
+                  {/* Analysis Status Indicator */}
+                  {!analysisData.isAnalysisComplete && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center">
+                          <Clock className="mr-2 h-5 w-5" />
+                          Analysis Status
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <AnalysisStatusIndicator
+                          status={analysisData.analysisStatus as 'loading' | 'pending' | 'partial' | 'complete' | 'failed'}
+                          hasAnyData={analysisData.hasAnyData}
+                          errors={analysisData.errors}
+                          onRefresh={analysisData.refreshAnalysis}
+                          lastUpdated={analysisData.lastUpdated}
+                        />
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Fact Strength Analysis */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Fact Strength Analysis</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <FactStrengthAnalysisWidget />
+                    </CardContent>
+                  </Card>
+
+                  {/* Average Time for Resolution */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Average Time for Resolution</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <AverageTimeResolutionWidget />
+                    </CardContent>
+                  </Card>
+                </div>
+              </TabsContent>
+
+              {/* Timeline Tab */}
+              <TabsContent value="timeline" className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Case Timeline</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-6">
+                      <div className="flex items-start space-x-4">
+                        <div className="flex-shrink-0 w-3 h-3 bg-green-500 rounded-full mt-2"></div>
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between">
+                            <h4 className="font-medium">Case Filed</h4>
+                            <span className="text-sm text-gray-500">{transformedCase.date}</span>
+                          </div>
+                          <p className="text-sm text-gray-600 mt-1">Initial complaint filed with the court</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start space-x-4">
+                        <div className="flex-shrink-0 w-3 h-3 bg-blue-500 rounded-full mt-2"></div>
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between">
+                            <h4 className="font-medium">Service of Process</h4>
+                            <span className="text-sm text-gray-500">2023-08-20</span>
+                          </div>
+                          <p className="text-sm text-gray-600 mt-1">Defendant served with complaint</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start space-x-4">
+                        <div className="flex-shrink-0 w-3 h-3 bg-yellow-500 rounded-full mt-2"></div>
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between">
+                            <h4 className="font-medium">Answer Filed</h4>
+                            <span className="text-sm text-gray-500">2023-09-05</span>
+                          </div>
+                          <p className="text-sm text-gray-600 mt-1">Defendant filed answer to complaint</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start space-x-4">
+                        <div className="flex-shrink-0 w-3 h-3 bg-gray-300 rounded-full mt-2"></div>
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between">
+                            <h4 className="font-medium text-gray-500">Discovery Period</h4>
+                            <span className="text-sm text-gray-500">Ongoing</span>
+                          </div>
+                          <p className="text-sm text-gray-600 mt-1">Document production and depositions</p>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Documents Tab */}
+              <TabsContent value="documents" className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Case Documents</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between p-3 border rounded-lg">
+                        <div className="flex items-center space-x-3">
+                          <FileText className="h-5 w-5 text-blue-500" />
+                          <div>
+                            <div className="font-medium">Complaint.pdf</div>
+                            <div className="text-sm text-gray-500">Filed on {transformedCase.date}</div>
                           </div>
                         </div>
-                        <div className="text-center">
-                          <div className="text-2xl font-bold text-green-600">
-                            ${Math.round(transformedCase.potentialValue / 1000)}K
-                          </div>
-                          <div className="text-sm text-gray-600">
-                            {analysisData.predictions?.estimated_financial_outcome ? 'AI Estimate' : 'Potential Value'}
+                        <Button variant="outline" size="sm">View</Button>
+                      </div>
+                      <div className="flex items-center justify-between p-3 border rounded-lg">
+                        <div className="flex items-center space-x-3">
+                          <FileText className="h-5 w-5 text-green-500" />
+                          <div>
+                            <div className="font-medium">Answer.pdf</div>
+                            <div className="text-sm text-gray-500">Filed on 2023-09-05</div>
                           </div>
                         </div>
-                        <div className="text-center">
-                          <div className="text-2xl font-bold text-purple-600">{transformedCase.daysActive}</div>
-                          <div className="text-sm text-gray-600">Days Active</div>
+                        <Button variant="outline" size="sm">View</Button>
+                      </div>
+                      <div className="flex items-center justify-between p-3 border rounded-lg">
+                        <div className="flex items-center space-x-3">
+                          <FileText className="h-5 w-5 text-purple-500" />
+                          <div>
+                            <div className="font-medium">Discovery_Request.pdf</div>
+                            <div className="text-sm text-gray-500">Filed on 2023-09-15</div>
+                          </div>
                         </div>
-                        <div className="text-center">
-                          <div className="text-2xl font-bold text-orange-600">{caseData.documents?.length || 0}</div>
-                          <div className="text-sm text-gray-600">Documents</div>
+                        <Button variant="outline" size="sm">View</Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Analytics Tab */}
+              <TabsContent value="analytics" className="space-y-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Outcome Prediction</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-center">
+                        <div className="text-4xl font-bold text-blue-600 mb-2">{transformedCase.confidence}%</div>
+                        <div className="text-sm text-gray-600">Likelihood of Success</div>
+                        <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                          <div className="text-sm font-medium text-blue-800">Recommended Strategy</div>
+                          <div className="text-sm text-blue-600 mt-1">Focus on settlement negotiations given strong evidence</div>
                         </div>
                       </div>
                     </CardContent>
@@ -436,417 +817,127 @@ const CaseView = () => {
 
                   <Card>
                     <CardHeader>
-                      <CardTitle>Case Progress</CardTitle>
+                      <CardTitle>Risk Assessment</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-4">
                         <div>
-                          <div className="flex justify-between text-sm mb-2">
-                            <span>Overall Progress</span>
-                            <span>{transformedCase.confidence}%</span>
+                          <div className="flex justify-between text-sm mb-1">
+                            <span>Legal Risk</span>
+                            <span>Medium</span>
                           </div>
-                          <Progress value={transformedCase.confidence} className="h-2" />
+                          <Progress value={60} className="h-2" />
                         </div>
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                          <div className="flex items-center">
-                            <CheckCircle className="mr-2 h-4 w-4 text-green-500" />
-                            <span>Initial Filing</span>
+                        <div>
+                          <div className="flex justify-between text-sm mb-1">
+                            <span>Financial Risk</span>
+                            <span>Low</span>
                           </div>
-                          <div className="flex items-center">
-                            <CheckCircle className="mr-2 h-4 w-4 text-green-500" />
-                            <span>Discovery</span>
+                          <Progress value={25} className="h-2" />
+                        </div>
+                        <div>
+                          <div className="flex justify-between text-sm mb-1">
+                            <span>Reputational Risk</span>
+                            <span>High</span>
                           </div>
-                          <div className="flex items-center">
-                            <Clock className="mr-2 h-4 w-4 text-yellow-500" />
-                            <span>Pre-trial</span>
-                          </div>
-                          <div className="flex items-center">
-                            <AlertTriangle className="mr-2 h-4 w-4 text-gray-400" />
-                            <span>Trial</span>
-                          </div>
+                          <Progress value={80} className="h-2" />
                         </div>
                       </div>
                     </CardContent>
                   </Card>
                 </div>
+              </TabsContent>
 
-                {/* Quick Actions */}
-                <div className="space-y-6">
+              {/* Parties Tab */}
+              <TabsContent value="parties" className="space-y-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <Card>
                     <CardHeader>
-                      <CardTitle>Quick Actions</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <Button className="w-full justify-start" variant="outline">
-                        <FileText className="mr-2 h-4 w-4" />
-                        Add Document
-                      </Button>
-                      <Button className="w-full justify-start" variant="outline">
-                        <Calendar className="mr-2 h-4 w-4" />
-                        Schedule Event
-                      </Button>
-                      <Button className="w-full justify-start" variant="outline">
-                        <User className="mr-2 h-4 w-4" />
-                        Add Party
-                      </Button>
-                      <Button className="w-full justify-start" variant="outline">
-                        <DollarSign className="mr-2 h-4 w-4" />
-                        Update Settlement
-                      </Button>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Case Details</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Filed Date:</span>
-                        <span>{transformedCase.date}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Court:</span>
-                        <span>Superior Court</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Judge:</span>
-                        <span>Hon. Sarah Johnson</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Case Type:</span>
-                        <span>Civil Litigation</span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              </div>
-            </TabsContent>
-
-            {/* Insights Tab */}
-            <TabsContent value="insights" className="space-y-6">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Predicted Case Outcome */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Predicted Case Outcome</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <PredictedOutcomeWidget caseId={caseId} />
-                  </CardContent>
-                </Card>
-
-                {/* Case Complexity & Risk Score */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Case Complexity & Risk Score</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <CaseComplexityRiskWidget caseId={caseId} />
-                  </CardContent>
-                </Card>
-
-                {/* Risk Assessment */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Risk Assessment</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <RiskAssessmentWidget caseId={caseId} />
-                  </CardContent>
-                </Card>
-
-                {/* Precedent Analysis */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Precedent Analysis</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <PrecedentAnalysisWidget caseId={caseId} />
-                  </CardContent>
-                </Card>
-
-                {/* Judge & Lawyer Analysis */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Judge & Lawyer Analysis</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <JudgeAnalysisWidget caseId={caseId} />
-                      <div className="border-t pt-4">
-                        <LawyerAnalysisWidget caseId={caseId} />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Settlement vs Trial Analysis */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Settlement vs Trial Analysis</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <SettlementVsTrialAnalysisWidget caseId={caseId} />
-                  </CardContent>
-                </Card>
-
-                {/* AI Strategy Recommendations */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>AI Strategy Recommendations</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <AIStrategyRecommendationsWidget caseId={caseId} />
-                  </CardContent>
-                </Card>
-
-                {/* Analysis Status Indicator */}
-                {!analysisData.isAnalysisComplete && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center">
-                        <Clock className="mr-2 h-5 w-5" />
-                        Analysis Status
-                      </CardTitle>
+                      <CardTitle>Plaintiff</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <AnalysisStatusIndicator
-                        status={analysisData.analysisStatus as 'loading' | 'pending' | 'partial' | 'complete' | 'failed'}
-                        hasAnyData={analysisData.hasAnyData}
-                        errors={analysisData.errors}
-                        onRefresh={analysisData.refreshAnalysis}
-                        lastUpdated={analysisData.lastUpdated}
-                      />
+                      <div className="space-y-3">
+                        <div>
+                          <div className="font-medium">John Johnson</div>
+                          <div className="text-sm text-gray-600">Individual</div>
+                        </div>
+                        <div className="text-sm">
+                          <div className="text-gray-600">Represented by:</div>
+                          <div>Smith & Associates Law Firm</div>
+                        </div>
+                        <div className="text-sm">
+                          <div className="text-gray-600">Contact:</div>
+                          <div>john.johnson@email.com</div>
+                          <div>(555) 123-4567</div>
+                        </div>
+                      </div>
                     </CardContent>
                   </Card>
-                )}
 
-                {/* Fact Strength Analysis */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Fact Strength Analysis</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <FactStrengthAnalysisWidget />
-                  </CardContent>
-                </Card>
-
-                {/* Average Time for Resolution */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Average Time for Resolution</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <AverageTimeResolutionWidget />
-                  </CardContent>
-                </Card>
-              </div>
-            </TabsContent>
-
-            {/* Timeline Tab */}
-            <TabsContent value="timeline" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Case Timeline</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-6">
-                    <div className="flex items-start space-x-4">
-                      <div className="flex-shrink-0 w-3 h-3 bg-green-500 rounded-full mt-2"></div>
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between">
-                          <h4 className="font-medium">Case Filed</h4>
-                          <span className="text-sm text-gray-500">{transformedCase.date}</span>
-                        </div>
-                        <p className="text-sm text-gray-600 mt-1">Initial complaint filed with the court</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start space-x-4">
-                      <div className="flex-shrink-0 w-3 h-3 bg-blue-500 rounded-full mt-2"></div>
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between">
-                          <h4 className="font-medium">Service of Process</h4>
-                          <span className="text-sm text-gray-500">2023-08-20</span>
-                        </div>
-                        <p className="text-sm text-gray-600 mt-1">Defendant served with complaint</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start space-x-4">
-                      <div className="flex-shrink-0 w-3 h-3 bg-yellow-500 rounded-full mt-2"></div>
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between">
-                          <h4 className="font-medium">Answer Filed</h4>
-                          <span className="text-sm text-gray-500">2023-09-05</span>
-                        </div>
-                        <p className="text-sm text-gray-600 mt-1">Defendant filed answer to complaint</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start space-x-4">
-                      <div className="flex-shrink-0 w-3 h-3 bg-gray-300 rounded-full mt-2"></div>
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between">
-                          <h4 className="font-medium text-gray-500">Discovery Period</h4>
-                          <span className="text-sm text-gray-500">Ongoing</span>
-                        </div>
-                        <p className="text-sm text-gray-600 mt-1">Document production and depositions</p>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* Documents Tab */}
-            <TabsContent value="documents" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Case Documents</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between p-3 border rounded-lg">
-                      <div className="flex items-center space-x-3">
-                        <FileText className="h-5 w-5 text-blue-500" />
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Defendant</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
                         <div>
-                          <div className="font-medium">Complaint.pdf</div>
-                          <div className="text-sm text-gray-500">Filed on {transformedCase.date}</div>
+                          <div className="font-medium">MedTech Inc.</div>
+                          <div className="text-sm text-gray-600">Corporation</div>
+                        </div>
+                        <div className="text-sm">
+                          <div className="text-gray-600">Represented by:</div>
+                          <div>Johnson & Partners LLP</div>
+                        </div>
+                        <div className="text-sm">
+                          <div className="text-gray-600">Contact:</div>
+                          <div>legal@medtech.com</div>
+                          <div>(555) 987-6543</div>
                         </div>
                       </div>
-                      <Button variant="outline" size="sm">View</Button>
-                    </div>
-                    <div className="flex items-center justify-between p-3 border rounded-lg">
-                      <div className="flex items-center space-x-3">
-                        <FileText className="h-5 w-5 text-green-500" />
-                        <div>
-                          <div className="font-medium">Answer.pdf</div>
-                          <div className="text-sm text-gray-500">Filed on 2023-09-05</div>
-                        </div>
-                      </div>
-                      <Button variant="outline" size="sm">View</Button>
-                    </div>
-                    <div className="flex items-center justify-between p-3 border rounded-lg">
-                      <div className="flex items-center space-x-3">
-                        <FileText className="h-5 w-5 text-purple-500" />
-                        <div>
-                          <div className="font-medium">Discovery_Request.pdf</div>
-                          <div className="text-sm text-gray-500">Filed on 2023-09-15</div>
-                        </div>
-                      </div>
-                      <Button variant="outline" size="sm">View</Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* Analytics Tab */}
-            <TabsContent value="analytics" className="space-y-6">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Outcome Prediction</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-center">
-                      <div className="text-4xl font-bold text-blue-600 mb-2">{transformedCase.confidence}%</div>
-                      <div className="text-sm text-gray-600">Likelihood of Success</div>
-                      <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-                        <div className="text-sm font-medium text-blue-800">Recommended Strategy</div>
-                        <div className="text-sm text-blue-600 mt-1">Focus on settlement negotiations given strong evidence</div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Risk Assessment</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div>
-                        <div className="flex justify-between text-sm mb-1">
-                          <span>Legal Risk</span>
-                          <span>Medium</span>
-                        </div>
-                        <Progress value={60} className="h-2" />
-                      </div>
-                      <div>
-                        <div className="flex justify-between text-sm mb-1">
-                          <span>Financial Risk</span>
-                          <span>Low</span>
-                        </div>
-                        <Progress value={25} className="h-2" />
-                      </div>
-                      <div>
-                        <div className="flex justify-between text-sm mb-1">
-                          <span>Reputational Risk</span>
-                          <span>High</span>
-                        </div>
-                        <Progress value={80} className="h-2" />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </TabsContent>
-
-            {/* Parties Tab */}
-            <TabsContent value="parties" className="space-y-6">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Plaintiff</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      <div>
-                        <div className="font-medium">John Johnson</div>
-                        <div className="text-sm text-gray-600">Individual</div>
-                      </div>
-                      <div className="text-sm">
-                        <div className="text-gray-600">Represented by:</div>
-                        <div>Smith & Associates Law Firm</div>
-                      </div>
-                      <div className="text-sm">
-                        <div className="text-gray-600">Contact:</div>
-                        <div>john.johnson@email.com</div>
-                        <div>(555) 123-4567</div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Defendant</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      <div>
-                        <div className="font-medium">MedTech Inc.</div>
-                        <div className="text-sm text-gray-600">Corporation</div>
-                      </div>
-                      <div className="text-sm">
-                        <div className="text-gray-600">Represented by:</div>
-                        <div>Johnson & Partners LLP</div>
-                      </div>
-                      <div className="text-sm">
-                        <div className="text-gray-600">Contact:</div>
-                        <div>legal@medtech.com</div>
-                        <div>(555) 987-6543</div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </TabsContent>
-          </Tabs>
+                    </CardContent>
+                  </Card>
+                </div>
+              </TabsContent>
+            </Tabs>
+          </div>
         </div>
       </div>
-    </div>
+    );
+  } catch (error) {
+    console.error('Error rendering CaseView:', error);
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Something went wrong</h1>
+          <p className="text-gray-600 mb-6">
+            There was an error rendering the case view. Please try refreshing the page.
+          </p>
+          <div className="space-y-2">
+            <Button onClick={() => window.location.reload()}>
+              Refresh Page
+            </Button>
+            <Button variant="outline" onClick={() => navigate('/dashboard')} className="ml-2">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Dashboard
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+};
+
+// Wrap the CaseView component with error boundary
+const CaseViewWithErrorBoundary = () => {
+  const handleError = (error: Error) => {
+    console.error('CaseView error caught by boundary:', error);
+  };
+
+  return (
+    <CaseViewErrorBoundary onError={handleError}>
+      <CaseView />
+    </CaseViewErrorBoundary>
   );
 };
 
-export default CaseView; 
+export default CaseViewWithErrorBoundary; 
