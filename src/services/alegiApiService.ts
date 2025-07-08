@@ -107,6 +107,11 @@ export const getCaseData = async (caseId: string, session: any) => {
   return retryWithBackoff(() => makeAuthenticatedAPICall(`/api/cases/${caseId}`, session));
 };
 
+// Comprehensive case view data endpoint - includes all case data without triggering analysis
+export const getCaseViewData = async (caseId: string, session: any) => {
+  return retryWithBackoff(() => makeAuthenticatedAPICall(`/api/cases/${caseId}/view`, session));
+};
+
 export const getEnhancedCaseStatus = async (caseId: string, session: any) => {
   return retryWithBackoff(() => makeAuthenticatedAPICall(`/api/cases/${caseId}/enhanced-status`, session));
 };

@@ -8,12 +8,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useDashboard } from '@/contexts/DashboardContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { fetchCompleteCase } from '@/utils/case/caseFetching';
 import { useState, useEffect, useMemo, useCallback, Component, ReactNode } from 'react';
 import { CompleteCase } from '@/utils/case/types';
-import { useCaseAnalysis } from '@/hooks/useCaseAnalysis';
+import { useCaseViewData } from '@/hooks/useCaseViewData';
 import AnalysisStatusIndicator from '@/components/dashboard/AnalysisStatusIndicator';
-import { getCaseStatus, triggerCaseAnalysis } from '@/services/alegiApiService';
+import { triggerCaseAnalysis } from '@/services/alegiApiService';
 
 // Import all the case insights widgets
 import PredictedOutcomeWidget from '@/components/dashboard/widgets/PredictedOutcomeWidget';
@@ -72,60 +71,43 @@ const CaseView = () => {
   const navigate = useNavigate();
   const { toggleFavorite, isFavorite } = useDashboard();
   const { session } = useAuth();
-  const [caseData, setCaseData] = useState<CompleteCase | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [copyFeedback, setCopyFeedback] = useState(false);
-  const [loadingPhase, setLoadingPhase] = useState<'case' | 'analysis' | 'complete'>('case');
-  const [processingStatus, setProcessingStatus] = useState<string | null>(null);
-  const [lastStatusCheck, setLastStatusCheck] = useState<Date | null>(null);
   const [isManuallyTriggering, setIsManuallyTriggering] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
-  // Add the case analysis hook
-  const analysisData = useCaseAnalysis(caseId);
+  // Use the new hook for fetching case data
+  const { data: caseViewData, isLoading, error, refetch } = useCaseViewData(caseId);
 
-  useEffect(() => {
-    const loadCase = async () => {
-      if (!caseId || !session) return;
-      
-      setIsLoading(true);
-      setLoadingPhase('case');
-      try {
-        const completeCase = await fetchCompleteCase(caseId, session);
-        setCaseData(completeCase);
-        setLoadingPhase('analysis');
-        
-        // Check processing status
-        try {
-          const status = await getCaseStatus(caseId, session);
-          setProcessingStatus(status?.status || null);
-          setLastStatusCheck(new Date());
-        } catch (statusError) {
-          console.warn('Failed to get case status:', statusError);
-        }
-      } catch (error) {
-        console.error('Error loading case:', error);
-        setCaseData(null);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  // Handle manual trigger for analysis
+  const handleTriggerAnalysis = useCallback(async () => {
+    if (!caseId || !session || isManuallyTriggering) return;
+    
+    setIsManuallyTriggering(true);
+    try {
+      await triggerCaseAnalysis(caseId, session);
+      // Wait a bit then refetch
+      setTimeout(() => {
+        refetch();
+        setRefreshKey(prev => prev + 1);
+      }, 2000);
+    } catch (error) {
+      console.error('Failed to trigger analysis:', error);
+    } finally {
+      setIsManuallyTriggering(false);
+    }
+  }, [caseId, session, refetch, isManuallyTriggering]);
 
-    loadCase();
-  }, [caseId, session]);
-
-  if (isLoading || analysisData.isLoading) {
+  if (isLoading) {
      return (
        <div className="flex min-h-screen items-center justify-center">
          <div className="text-center">
            <div className="text-xl font-semibold mb-4">
-             {loadingPhase === 'case' ? 'Loading case data...' : 'Loading analysis...'}
+             Loading case data...
            </div>
            <div className="text-sm text-gray-600">
              <div className="flex items-center justify-center space-x-2">
                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
-               <span>
-                 {loadingPhase === 'case' ? 'Fetching case information' : 'Processing AI analysis'}
-               </span>
+               <span>Fetching case information</span>
              </div>
            </div>
          </div>
@@ -133,16 +115,24 @@ const CaseView = () => {
      );
    }
 
-  if (!caseData) {
+  if (error || !caseViewData) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Case Not Found</h1>
-          <p className="text-gray-600 mb-6">The case you're looking for doesn't exist or failed to load.</p>
-          <Button onClick={() => navigate('/dashboard')}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Dashboard
-          </Button>
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Error Loading Case</h1>
+          <p className="text-gray-600 mb-6">
+            {error?.message || 'The case you\'re looking for doesn\'t exist or failed to load.'}
+          </p>
+          <div className="space-x-4">
+            <Button onClick={() => refetch()} variant="outline">
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Try Again
+            </Button>
+            <Button onClick={() => navigate('/dashboard')}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Dashboard
+            </Button>
+          </div>
         </div>
       </div>
     );
