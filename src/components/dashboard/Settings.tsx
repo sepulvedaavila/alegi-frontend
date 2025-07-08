@@ -39,7 +39,7 @@ const Settings = () => {
           .from('profiles')
           .select('*')
           .eq('id', user.id)
-          .maybemaybeSingle();
+          .maybeSingle();
 
         if (error) {
           console.error('Error fetching profile:', error);

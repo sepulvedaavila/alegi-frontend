@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { fetchCompleteAnalysis } from '@/services/caseAnalysisService';
 import { fetchComprehensiveCaseData } from '@/services/supabaseCaseDataService';
+import { getCaseStatus, triggerCaseAnalysis, triggerEnhancedProcessing } from '@/services/alegiApiService';
 
 export interface CaseAnalysisData {
   // API Analysis Results
@@ -24,6 +25,7 @@ export interface CaseAnalysisData {
   isLoading: boolean;
   errors: any[];
   lastUpdated: Date | null;
+  caseStatus: any;
 }
 
 export const useCaseAnalysis = (caseId: string | undefined) => {
@@ -43,10 +45,41 @@ export const useCaseAnalysis = (caseId: string | undefined) => {
     analysis: [],
     isLoading: false,
     errors: [],
-    lastUpdated: null
+    lastUpdated: null,
+    caseStatus: null
   });
 
   const [refreshInterval, setRefreshInterval] = useState<NodeJS.Timeout | null>(null);
+
+  const checkCaseStatus = useCallback(async () => {
+    if (!caseId || !session) {
+      return null;
+    }
+
+    try {
+      const status = await getCaseStatus(caseId, session);
+      return status;
+    } catch (error) {
+      console.warn('Error checking case status:', error);
+      return null;
+    }
+  }, [caseId, session]);
+
+  const triggerAnalysisIfNeeded = useCallback(async (status: any) => {
+    if (!caseId || !session || !status) {
+      return;
+    }
+
+    // Check if case needs initial processing
+    if (!status.ai_processed && status.status !== 'processing') {
+      try {
+        console.log('Triggering initial analysis for case:', caseId);
+        await triggerCaseAnalysis(caseId, session);
+      } catch (error) {
+        console.warn('Error triggering initial analysis:', error);
+      }
+    }
+  }, [caseId, session]);
 
   const fetchAnalysisData = useCallback(async (showLoading = true) => {
     if (!caseId || !session) {
@@ -58,63 +91,83 @@ export const useCaseAnalysis = (caseId: string | undefined) => {
     }
 
     try {
-      // Fetch both API analysis and Supabase data
-      const [apiAnalysis, supabaseData] = await Promise.allSettled([
-        fetchCompleteAnalysis(caseId, session),
-        fetchComprehensiveCaseData(caseId)
-      ]);
-
-      const apiResult = apiAnalysis.status === 'fulfilled' ? apiAnalysis.value : null;
-      const supabaseResult = supabaseData.status === 'fulfilled' ? supabaseData.value : null;
-
-      const allErrors = [
-        ...(apiResult?.errors || []),
-        ...(supabaseResult?.errors || [])
-      ];
-
-      setData({
-        // API Data
-        probability: apiResult?.probability || null,
-        riskAssessment: apiResult?.riskAssessment || null,
-        precedents: apiResult?.precedents || null,
-        judgeAnalysis: apiResult?.judgeAnalysis || null,
-        settlementAnalysis: apiResult?.settlementAnalysis || null,
-        financialPrediction: apiResult?.financialPrediction || null,
-        timelineEstimate: apiResult?.timelineEstimate || null,
-        costEstimate: apiResult?.costEstimate || null,
-        
-        // Supabase Data
-        predictions: supabaseResult?.predictions || null,
-        enrichment: supabaseResult?.enrichment || null,
-        similarCases: supabaseResult?.similarCases || [],
-        analysis: supabaseResult?.analysis || [],
-        
-        // Status
-        isLoading: false,
-        errors: allErrors,
-        lastUpdated: new Date()
-      });
-
-      // Only set up polling if we have no data at all and the case is new
-      const hasAnyData = !!(apiResult?.probability || apiResult?.riskAssessment || 
-                           supabaseResult?.predictions || supabaseResult?.enrichment);
+      // Step 1: Check case status first
+      const status = await checkCaseStatus();
       
-      const hasNetworkErrors = allErrors.some(error => 
-        error.error?.message?.includes('Network error') ||
-        error.error?.message?.includes('Failed to fetch')
-      );
+      if (status) {
+        setData(prev => ({ ...prev, caseStatus: status }));
+        
+        // Step 2: Trigger analysis if needed
+        await triggerAnalysisIfNeeded(status);
+        
+        // Step 3: Only fetch analysis data if case is processed or processing
+        if (status.ai_processed || status.status === 'processing') {
+          // Fetch both API analysis and Supabase data
+          const [apiAnalysis, supabaseData] = await Promise.allSettled([
+            fetchCompleteAnalysis(caseId, session),
+            fetchComprehensiveCaseData(caseId)
+          ]);
 
-      if (!hasAnyData && !hasNetworkErrors && !refreshInterval) {
-        console.log('No analysis data available, setting up polling...');
-        const interval = setInterval(() => {
-          fetchAnalysisData(false); // Refresh without loading indicator
-        }, 30000); // Poll every 30 seconds instead of 15
+          const apiResult = apiAnalysis.status === 'fulfilled' ? apiAnalysis.value : null;
+          const supabaseResult = supabaseData.status === 'fulfilled' ? supabaseData.value : null;
 
-        setRefreshInterval(interval);
-      } else if ((hasAnyData || hasNetworkErrors) && refreshInterval) {
-        // Clear polling if we have data or network errors
-        clearInterval(refreshInterval);
-        setRefreshInterval(null);
+          const allErrors = [
+            ...(apiResult?.errors || []),
+            ...(supabaseResult?.errors || [])
+          ];
+
+          setData(prev => ({
+            ...prev,
+            // API Data
+            probability: apiResult?.probability || null,
+            riskAssessment: apiResult?.riskAssessment || null,
+            precedents: apiResult?.precedents || null,
+            judgeAnalysis: apiResult?.judgeAnalysis || null,
+            settlementAnalysis: apiResult?.settlementAnalysis || null,
+            financialPrediction: apiResult?.financialPrediction || null,
+            timelineEstimate: apiResult?.timelineEstimate || null,
+            costEstimate: apiResult?.costEstimate || null,
+            
+            // Supabase Data
+            predictions: supabaseResult?.predictions || null,
+            enrichment: supabaseResult?.enrichment || null,
+            similarCases: supabaseResult?.similarCases || [],
+            analysis: supabaseResult?.analysis || [],
+            
+            // Status
+            isLoading: false,
+            errors: allErrors,
+            lastUpdated: new Date()
+          }));
+
+          // Set up polling if case is still processing
+          if (status.status === 'processing' && !refreshInterval) {
+            console.log('Case is processing, setting up polling...');
+            const interval = setInterval(() => {
+              fetchAnalysisData(false); // Refresh without loading indicator
+            }, 30000); // Poll every 30 seconds
+
+            setRefreshInterval(interval);
+          } else if (status.status !== 'processing' && refreshInterval) {
+            // Clear polling if case is no longer processing
+            clearInterval(refreshInterval);
+            setRefreshInterval(null);
+          }
+        } else {
+          // Case not processed yet, set loading to false
+          setData(prev => ({
+            ...prev,
+            isLoading: false,
+            lastUpdated: new Date()
+          }));
+        }
+      } else {
+        // No status available, set loading to false
+        setData(prev => ({
+          ...prev,
+          isLoading: false,
+          errors: [{ type: 'status', error: new Error('Unable to check case status') }]
+        }));
       }
 
     } catch (error) {
@@ -125,11 +178,27 @@ export const useCaseAnalysis = (caseId: string | undefined) => {
         errors: [{ type: 'general', error }]
       }));
     }
-  }, [caseId, session, refreshInterval]);
+  }, [caseId, session, refreshInterval, checkCaseStatus, triggerAnalysisIfNeeded]);
 
   const refreshAnalysis = useCallback(() => {
     fetchAnalysisData(true);
   }, [fetchAnalysisData]);
+
+  const triggerEnhancedAnalysis = useCallback(async () => {
+    if (!caseId || !session) {
+      return;
+    }
+
+    try {
+      await triggerEnhancedProcessing(caseId, session);
+      // Refresh analysis data after triggering enhanced processing
+      setTimeout(() => {
+        fetchAnalysisData(true);
+      }, 2000);
+    } catch (error) {
+      console.warn('Error triggering enhanced analysis:', error);
+    }
+  }, [caseId, session, fetchAnalysisData]);
 
   // Initial fetch and cleanup
   useEffect(() => {
@@ -157,6 +226,7 @@ export const useCaseAnalysis = (caseId: string | undefined) => {
     if (data.errors.length > 0 && !hasAnyData()) return 'failed';
     if (isAnalysisComplete()) return 'complete';
     if (hasAnyData()) return 'partial';
+    if (data.caseStatus?.status === 'processing') return 'processing';
     return 'pending';
   }, [data, hasAnyData, isAnalysisComplete]);
 
@@ -164,12 +234,14 @@ export const useCaseAnalysis = (caseId: string | undefined) => {
   const memoizedReturn = useMemo(() => ({
     ...data,
     refreshAnalysis,
+    triggerEnhancedAnalysis,
     hasAnyData: hasAnyData(),
     isAnalysisComplete: isAnalysisComplete(),
     analysisStatus: getAnalysisStatus()
   }), [
     data,
     refreshAnalysis,
+    triggerEnhancedAnalysis,
     hasAnyData,
     isAnalysisComplete,
     getAnalysisStatus

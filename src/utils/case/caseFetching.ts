@@ -1,24 +1,43 @@
 import { supabase } from '@/integrations/supabase/client';
 import { CompleteCase } from './types';
 import { Case } from '@/types/dashboard';
+import { getCaseData } from '@/services/alegiApiService';
+import { useAuth } from '@/contexts/AuthContext';
 
 /**
  * Fetches a complete case with all related data
  * @param caseId The ID of the case to fetch
+ * @param session The user session for API authentication
  * @returns The complete case data or null if not found
  */
-export const fetchCompleteCase = async (caseId: string): Promise<CompleteCase | null> => {
+export const fetchCompleteCase = async (caseId: string, session?: any): Promise<CompleteCase | null> => {
   try {
-    // Fetch the main case data
-    const { data: caseData, error: caseError } = await supabase
-      .from('case_briefs')
-      .select('*')
-      .eq('id', caseId)
-      .maybeSingle();
+    let caseData: any = null;
     
-    if (caseError || !caseData) {
-      console.error('Error fetching case:', caseError);
-      return null;
+    // Try to fetch from API first if session is available
+    if (session) {
+      try {
+        caseData = await getCaseData(caseId, session);
+      } catch (apiError) {
+        console.warn('API fetch failed, falling back to Supabase:', apiError);
+        // Fall back to Supabase if API fails
+      }
+    }
+    
+    // If API failed or no session, use Supabase
+    if (!caseData) {
+      const { data: supabaseCaseData, error: caseError } = await supabase
+        .from('case_briefs')
+        .select('*')
+        .eq('id', caseId)
+        .maybeSingle();
+      
+      if (caseError || !supabaseCaseData) {
+        console.error('Error fetching case:', caseError);
+        return null;
+      }
+      
+      caseData = supabaseCaseData;
     }
     
     // Fetch plaintiffs

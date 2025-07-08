@@ -7,6 +7,7 @@ import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useDashboard } from '@/contexts/DashboardContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { fetchCompleteCase } from '@/utils/case/caseFetching';
 import { useState, useEffect, useMemo, useCallback, Component, ReactNode } from 'react';
 import { CompleteCase } from '@/utils/case/types';
@@ -69,6 +70,7 @@ const CaseView = () => {
   const { caseId } = useParams<{ caseId: string }>();
   const navigate = useNavigate();
   const { toggleFavorite, isFavorite } = useDashboard();
+  const { session } = useAuth();
   const [caseData, setCaseData] = useState<CompleteCase | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [copyFeedback, setCopyFeedback] = useState(false);
@@ -84,7 +86,7 @@ const CaseView = () => {
       setIsLoading(true);
       setLoadingPhase('case');
       try {
-        const completeCase = await fetchCompleteCase(caseId);
+        const completeCase = await fetchCompleteCase(caseId, session);
         setCaseData(completeCase);
         setLoadingPhase('analysis');
       } catch (error) {
@@ -162,8 +164,7 @@ const CaseView = () => {
     );
   }
 
-  // Check if analysis data is not available but case data is loaded
-  const hasNoAnalysisData = !analysisData.hasAnyData && !analysisData.isLoading && analysisData.errors.length === 0;
+
 
   // Helper functions for status colors
   const getStatusColor = (status: string) => {
@@ -615,14 +616,36 @@ const CaseView = () => {
             </div>
 
             {/* Analysis Status Notification */}
-            {hasNoAnalysisData && (
+            {analysisData.analysisStatus === 'pending' && (
               <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                 <div className="flex items-start">
                   <Clock className="h-5 w-5 text-blue-500 mt-0.5 mr-3" />
                   <div className="flex-1">
-                    <h3 className="text-sm font-medium text-blue-900">Analysis in Progress</h3>
+                    <h3 className="text-sm font-medium text-blue-900">Analysis Pending</h3>
                     <p className="text-sm text-blue-700 mt-1">
-                      Your case has been submitted for AI analysis. This typically takes 2-5 minutes to complete. 
+                      Your case is ready for AI analysis. Click the button below to start the analysis process.
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={analysisData.refreshAnalysis}
+                    className="ml-4"
+                  >
+                    Start Analysis
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {analysisData.analysisStatus === 'processing' && (
+              <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <div className="flex items-start">
+                  <Clock className="h-5 w-5 text-yellow-500 mt-0.5 mr-3" />
+                  <div className="flex-1">
+                    <h3 className="text-sm font-medium text-yellow-900">Analysis in Progress</h3>
+                    <p className="text-sm text-yellow-700 mt-1">
+                      Your case is being analyzed by AI. This typically takes 2-5 minutes to complete. 
                       You can view the basic case information below while the analysis is being processed.
                     </p>
                   </div>
@@ -634,6 +657,36 @@ const CaseView = () => {
                   >
                     Refresh
                   </Button>
+                </div>
+              </div>
+            )}
+
+            {analysisData.analysisStatus === 'complete' && (
+              <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+                <div className="flex items-start">
+                  <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 mr-3" />
+                  <div className="flex-1">
+                    <h3 className="text-sm font-medium text-green-900">Analysis Complete</h3>
+                    <p className="text-sm text-green-700 mt-1">
+                      AI analysis has been completed. You can now view detailed insights and predictions.
+                    </p>
+                  </div>
+                  <div className="flex space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={analysisData.refreshAnalysis}
+                    >
+                      Refresh
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={analysisData.triggerEnhancedAnalysis}
+                    >
+                      Enhanced Analysis
+                    </Button>
+                  </div>
                 </div>
               </div>
             )}

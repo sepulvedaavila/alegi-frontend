@@ -102,6 +102,11 @@ export const getCaseStatus = async (caseId: string, session: any) => {
   return retryWithBackoff(() => makeAuthenticatedAPICall(`/api/cases/${caseId}/status`, session));
 };
 
+// New endpoint for basic case data
+export const getCaseData = async (caseId: string, session: any) => {
+  return retryWithBackoff(() => makeAuthenticatedAPICall(`/api/cases/${caseId}`, session));
+};
+
 export const getEnhancedCaseStatus = async (caseId: string, session: any) => {
   return retryWithBackoff(() => makeAuthenticatedAPICall(`/api/cases/${caseId}/enhanced-status`, session));
 };
@@ -154,6 +159,13 @@ export const findSimilarCases = async (caseId: string, session: any) => {
 // Manual triggers
 export const triggerCaseAnalysis = async (caseId: string, session: any) => {
   return retryWithBackoff(() => makeAuthenticatedAPICall(`/api/cases/${caseId}/trigger-analysis`, session, {
+    method: 'POST'
+  }));
+};
+
+// New endpoint for enhanced processing
+export const triggerEnhancedProcessing = async (caseId: string, session: any) => {
+  return retryWithBackoff(() => makeAuthenticatedAPICall(`/api/cases/${caseId}/enhanced-process`, session, {
     method: 'POST'
   }));
 };
