@@ -12,6 +12,7 @@ import EvidenceNotesForm from './form-pages/EvidenceNotesForm';
 import SecurityNotice from './form-sections/SecurityNotice';
 import { useFormSteps, FormStepValidation } from '@/hooks/useFormSteps';
 import { useDashboard } from '@/contexts/DashboardContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface NewCaseModalProps {
   isOpen: boolean;
@@ -22,6 +23,7 @@ const NewCaseModal = ({ isOpen, onClose }: NewCaseModalProps) => {
   const navigate = useNavigate();
   const methods = useCaseForm();
   const { refreshCases } = useDashboard();
+  const { session } = useAuth();
   
   const formSteps: FormStepValidation[] = [
     {
@@ -41,7 +43,7 @@ const NewCaseModal = ({ isOpen, onClose }: NewCaseModalProps) => {
   const totalSteps = formSteps.length;
   
   const handleFormComplete = async (data: CaseFormValues) => {
-    await submitCaseForm(data, methods.reset, setCurrentStep, setIsSubmitting);
+    await submitCaseForm(data, methods.reset, setCurrentStep, setIsSubmitting, undefined, session);
     await refreshCases();
     onClose();
   };

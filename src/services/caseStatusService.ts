@@ -1,8 +1,14 @@
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { CaseStatus } from '@/hooks/useCaseNotifications';
-import { retryWithBackoff } from '@/utils/apiRetry';
-import { getValidJWTToken, createAuthHeaders, handleAuthError } from '@/utils/auth';
+import { 
+  getCaseStatus as getCaseStatusFromApi,
+  getEnhancedCaseStatus as getEnhancedCaseStatusFromApi,
+  getCaseUpdates as getCaseUpdatesFromApi,
+  getAllUserCasesStatus as getAllUserCasesStatusFromApi,
+  checkBackendHealth as checkBackendHealthFromApi,
+  getRealtimeStats as getRealtimeStatsFromApi
+} from './alegiApiService';
 
 export interface UserCaseStatus {
   caseId: string;
@@ -13,158 +19,25 @@ export interface UserCaseStatus {
   createdAt: string;
 }
 
-interface CaseStatusResponse {
-  cases: UserCaseStatus[];
-}
-
-// Get backend URL from environment or use default
-const getBackendUrl = () => {
-  const url = import.meta.env.VITE_BACKEND_URL || 'https://alegi-backend.vercel.app';
-  console.log('Using backend URL:', url); // Add logging for debugging
-  return url;
-};
-
-/**
- * Generic API call wrapper with authentication and retry logic
- */
-const makeAuthenticatedAPICall = async (endpoint: string, session: any) => {
-  const headers = await createAuthHeaders(session);
-  if (!headers) {
-    throw new Error('No authentication token available');
-  }
-
-  const response = await fetch(`${getBackendUrl()}${endpoint}`, {
-    headers
-  });
-
-  if (!response.ok) {
-    if (response.status === 401) {
-      // Try to refresh token and retry once
-      try {
-        const refreshedHeaders = await createAuthHeaders(session);
-        if (refreshedHeaders) {
-          console.log('Retrying API call with refreshed token:', endpoint);
-          const retryResponse = await fetch(`${getBackendUrl()}${endpoint}`, {
-            headers: refreshedHeaders
-          });
-          
-          if (retryResponse.ok) {
-            return await retryResponse.json();
-          }
-        }
-      } catch (refreshError) {
-        console.error('Failed to refresh token for retry:', refreshError);
-      }
-      throw new Error('Authentication failed');
-    } else if (response.status === 403) {
-      throw new Error('Access denied');
-    } else if (response.status === 404) {
-      throw new Error('Resource not found');
-    } else {
-      throw new Error(`Failed to fetch data: ${response.statusText}`);
-    }
-  }
-
-  return await response.json();
-};
-
-/**
- * Fetches status for all cases belonging to the current user
- */
-export const fetchAllUserCasesStatus = async (session: any): Promise<UserCaseStatus[]> => {
-  const result = await retryWithBackoff(async () => {
-    return await makeAuthenticatedAPICall('/api/cases/status', session);
-  });
-
-  if (!result) {
-    throw new Error('Failed to fetch user cases status after retries');
-  }
-
-  return result.cases;
-};
-
-/**
- * Fetches status for a specific case
- */
-export const fetchCaseStatus = async (caseId: string, session: any): Promise<CaseStatus> => {
-  const result = await retryWithBackoff(async () => {
-    return await makeAuthenticatedAPICall(`/api/cases/${caseId}/status`, session);
-  });
-
-  if (!result) {
-    throw new Error('Failed to fetch case status after retries');
-  }
-
-  return result;
-};
+// Re-export the functions from alegiApiService for backward compatibility
+export const fetchAllUserCasesStatus = getAllUserCasesStatusFromApi;
+export const fetchCaseStatus = getCaseStatusFromApi;
+export const fetchEnhancedCaseStatus = getEnhancedCaseStatusFromApi;
+export const checkCaseUpdates = getCaseUpdatesFromApi;
+export const checkBackendHealth = checkBackendHealthFromApi;
+export const getRealtimeStats = getRealtimeStatsFromApi;
 
 /**
  * Checks if WebSocket service is available
  */
 export const checkWebSocketAvailability = async (session: any): Promise<boolean> => {
-  const result = await retryWithBackoff(async () => {
-    try {
-      const data = await makeAuthenticatedAPICall('/api/realtime/stats', session);
-      return data.available || false;
-    } catch (error) {
-      console.warn('WebSocket availability check failed:', error);
-      return false;
-    }
-  });
-
-  return result || false;
-};
-
-/**
- * Fetches enhanced status for a specific case with processing timestamps
- */
-export const fetchEnhancedCaseStatus = async (caseId: string, session: any): Promise<any> => {
-  const result = await retryWithBackoff(async () => {
-    return await makeAuthenticatedAPICall(`/api/cases/${caseId}/enhanced-status`, session);
-  });
-
-  if (!result) {
-    throw new Error('Failed to fetch enhanced case status after retries');
+  try {
+    const data = await getRealtimeStatsFromApi(session);
+    return data.available || false;
+  } catch (error) {
+    console.warn('WebSocket availability check failed:', error);
+    return false;
   }
-
-  return result;
-};
-
-/**
- * Checks for case updates since last check
- */
-export const checkCaseUpdates = async (caseId: string, lastUpdate: string, session: any): Promise<any> => {
-  const result = await retryWithBackoff(async () => {
-    return await makeAuthenticatedAPICall(`/api/cases/${caseId}/updates?lastUpdate=${lastUpdate}`, session);
-  });
-
-  if (!result) {
-    throw new Error('Failed to check case updates after retries');
-  }
-
-  return result;
-};
-
-/**
- * Checks backend health and available features
- */
-export const checkBackendHealth = async (): Promise<any> => {
-  const result = await retryWithBackoff(async () => {
-    const response = await fetch(`${getBackendUrl()}/api/health`);
-
-    if (!response.ok) {
-      throw new Error(`Backend health check failed: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    return data;
-  });
-
-  if (!result) {
-    throw new Error('Failed to check backend health after retries');
-  }
-
-  return result;
 };
 
 /**
