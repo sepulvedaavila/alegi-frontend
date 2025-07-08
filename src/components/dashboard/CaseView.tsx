@@ -374,8 +374,8 @@ const CaseView = () => {
     );
   }
 
-  // Memoize the calculation functions to prevent recreation
-  const getStableConfidence = useCallback((safeAnalysisData: any, caseDetails: any) => {
+  // Helper functions for calculations
+  const getStableConfidence = (safeAnalysisData: any, caseDetails: any) => {
     // First priority: Use actual analysis data
     if (safeAnalysisData.predictions?.confidence_prediction_percentage) {
       return safeAnalysisData.predictions.confidence_prediction_percentage;
@@ -432,9 +432,9 @@ const CaseView = () => {
     
     // Ensure confidence is within reasonable bounds
     return Math.max(30, Math.min(95, baseConfidence));
-  }, []);
+  };
 
-  const getStablePotentialValue = useCallback((safeAnalysisData: any, caseDetails: any) => {
+  const getStablePotentialValue = (safeAnalysisData: any, caseDetails: any) => {
     if (safeAnalysisData.predictions?.estimated_financial_outcome) {
       return safeAnalysisData.predictions.estimated_financial_outcome;
     }
@@ -453,9 +453,9 @@ const CaseView = () => {
     };
     
     return baseValues[caseDetails.case_type as keyof typeof baseValues] || 125000;
-  }, []);
+  };
 
-  const getStableDaysActive = useCallback((safeAnalysisData: any, caseDetails: any) => {
+  const getStableDaysActive = (safeAnalysisData: any, caseDetails: any) => {
     if (safeAnalysisData.timelineEstimate?.estimatedDays) {
       return safeAnalysisData.timelineEstimate.estimatedDays;
     }
@@ -468,7 +468,7 @@ const CaseView = () => {
       console.error('Error calculating days active:', error);
       return 0;
     }
-  }, []);
+  };
 
   // Transform the complete case data to match the expected format
   // Use useMemo to prevent recreation on every render
@@ -532,9 +532,6 @@ const CaseView = () => {
     analysisData?.riskAssessment?.overallRisk,
     analysisData?.financialPrediction?.estimatedValue,
     analysisData?.timelineEstimate?.estimatedDays,
-    getStableConfidence,
-    getStablePotentialValue,
-    getStableDaysActive,
     caseId
   ]);
 
