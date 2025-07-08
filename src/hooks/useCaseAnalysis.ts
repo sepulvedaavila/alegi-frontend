@@ -70,13 +70,13 @@ export const useCaseAnalysis = (caseId: string | undefined) => {
       return;
     }
 
-    // Check if case needs initial processing
-    if (!status.ai_processed && status.status !== 'processing') {
+    // Check if case needs initial processing through linear pipeline
+    if (!status.ai_processed && status.processing_status !== 'processing' && status.processing_status !== 'completed') {
       try {
-        console.log('Triggering initial analysis for case:', caseId);
+        console.log('Triggering linear pipeline analysis for case:', caseId);
         await triggerCaseAnalysis(caseId, session);
       } catch (error) {
-        console.warn('Error triggering initial analysis:', error);
+        console.warn('Error triggering linear pipeline analysis:', error);
       }
     }
   }, [caseId, session]);
@@ -100,8 +100,8 @@ export const useCaseAnalysis = (caseId: string | undefined) => {
         // Step 2: Trigger analysis if needed
         await triggerAnalysisIfNeeded(status);
         
-        // Step 3: Only fetch analysis data if case is processed or processing
-        if (status.ai_processed || status.status === 'processing') {
+        // Step 3: Fetch analysis data based on processing status
+        if (status.ai_processed || status.processing_status === 'processing' || status.processing_status === 'completed') {
           // Fetch both API analysis and Supabase data
           const [apiAnalysis, supabaseData] = await Promise.allSettled([
             fetchCompleteAnalysis(caseId, session),
@@ -140,15 +140,15 @@ export const useCaseAnalysis = (caseId: string | undefined) => {
             lastUpdated: new Date()
           }));
 
-          // Set up polling if case is still processing
-          if (status.status === 'processing' && !refreshInterval) {
-            console.log('Case is processing, setting up polling...');
+          // Set up polling if case is still processing through linear pipeline
+          if (status.processing_status === 'processing' && !refreshInterval) {
+            console.log('Linear pipeline is processing, setting up polling...');
             const interval = setInterval(() => {
               fetchAnalysisData(false); // Refresh without loading indicator
             }, 30000); // Poll every 30 seconds
 
             setRefreshInterval(interval);
-          } else if (status.status !== 'processing' && refreshInterval) {
+          } else if (status.processing_status !== 'processing' && refreshInterval) {
             // Clear polling if case is no longer processing
             clearInterval(refreshInterval);
             setRefreshInterval(null);
@@ -214,19 +214,35 @@ export const useCaseAnalysis = (caseId: string | undefined) => {
   // Helper functions to check data availability
   const hasAnyData = useCallback(() => {
     return !!(data.probability || data.predictions || data.enrichment || 
-              data.similarCases.length > 0 || data.analysis.length > 0);
+              data.similarCases.length > 0 || data.analysis.length > 0 ||
+              data.caseStatus?.ai_processed);
   }, [data]);
 
   const isAnalysisComplete = useCallback(() => {
+    // For linear pipeline, check if the case has been fully processed
+    if (data.caseStatus?.processing_status === 'completed' && data.caseStatus?.ai_processed) {
+      return true;
+    }
+    // Fallback to checking individual analysis components
     return !!(data.probability && data.riskAssessment && data.predictions);
   }, [data]);
 
   const getAnalysisStatus = useCallback(() => {
     if (data.isLoading) return 'loading';
+    
+    // Check case status first for linear pipeline states
+    if (data.caseStatus?.processing_status === 'processing') return 'processing';
+    if (data.caseStatus?.processing_status === 'completed' && hasAnyData()) return 'complete';
+    if (data.caseStatus?.processing_status === 'failed') return 'failed';
+    
+    // Fallback to analysis data states
     if (data.errors.length > 0 && !hasAnyData()) return 'failed';
     if (isAnalysisComplete()) return 'complete';
     if (hasAnyData()) return 'partial';
-    if (data.caseStatus?.status === 'processing') return 'processing';
+    
+    // Check if case has been processed through linear pipeline
+    if (data.caseStatus?.ai_processed) return 'complete';
+    
     return 'pending';
   }, [data, hasAnyData, isAnalysisComplete]);
 

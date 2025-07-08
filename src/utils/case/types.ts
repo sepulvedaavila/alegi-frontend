@@ -24,6 +24,15 @@ export interface CompleteCase {
     additional_notes: string | null;
     created_at: string;
     updated_at: string;
+    // Linear pipeline processing fields
+    processing_status?: string;
+    ai_processed?: boolean;
+    last_ai_update?: string;
+    success_probability?: number;
+    risk_level?: string;
+    case_strength_score?: number;
+    settlement_probability?: number;
+    estimated_timeline?: string;
   };
   plaintiffs: Array<{ id: string; name: string }>;
   defendants: Array<{ id: string; name: string }>;

@@ -18,6 +18,7 @@ export const fetchCompleteCase = async (caseId: string, session?: any): Promise<
     if (session) {
       try {
         caseData = await getCaseData(caseId, session);
+        console.log('Successfully fetched case data from API');
       } catch (apiError) {
         console.warn('API fetch failed, falling back to Supabase:', apiError);
         // Fall back to Supabase if API fails
@@ -116,7 +117,16 @@ export const fetchCompleteCase = async (caseId: string, session?: any): Promise<
         expected_outcome: caseData.expected_outcome,
         additional_notes: caseData.additional_notes,
         created_at: caseData.created_at,
-        updated_at: caseData.updated_at
+        updated_at: caseData.updated_at,
+        // Include linear pipeline processing fields
+        processing_status: caseData.processing_status,
+        ai_processed: caseData.ai_processed,
+        last_ai_update: caseData.last_ai_update,
+        success_probability: caseData.success_probability,
+        risk_level: caseData.risk_level,
+        case_strength_score: caseData.case_strength_score,
+        settlement_probability: caseData.settlement_probability,
+        estimated_timeline: caseData.estimated_timeline
       },
       plaintiffs: plaintiffsData || [],
       defendants: defendantsData || [],
@@ -172,16 +182,26 @@ export const fetchUserCases = async (userId: string): Promise<Case[]> => {
 
     // Transform the database data to match the Case type used in the dashboard
     const transformedCases: Case[] = casesData.map(caseData => {
-      // Determine status based on case_stage
+      // Determine status based on case_stage and processing status
       let status: 'Active' | 'Pending' | 'Closed' = 'Pending';
       if (caseData.case_stage === 'Filed' || caseData.case_stage === 'Discovery' || caseData.case_stage === 'Trial') {
         status = 'Active';
       } else if (caseData.case_stage === 'Settled' || caseData.case_stage === 'Dismissed' || caseData.case_stage === 'Closed') {
         status = 'Closed';
       }
+      
+      // Override status if still processing
+      if (caseData.processing_status === 'processing') {
+        status = 'Pending';
+      }
 
       // Calculate a stable confidence score based on case data
       const getStableConfidence = () => {
+        // Use AI-processed data if available from linear pipeline
+        if (caseData.success_probability && caseData.ai_processed) {
+          return caseData.success_probability;
+        }
+        
         let baseConfidence = 65; // Default base confidence
         
         // Adjust based on case stage
@@ -224,12 +244,19 @@ export const fetchUserCases = async (userId: string): Promise<Case[]> => {
         return Math.max(30, Math.min(95, baseConfidence));
       };
 
-      // Determine risk level based on case type and other factors
+      // Determine risk level based on case type and AI analysis
       let risk: 'Low' | 'Medium' | 'High' = 'Medium';
-      if (caseData.case_type === 'Medical Malpractice' || caseData.case_type === 'Product Liability') {
-        risk = 'High';
-      } else if (caseData.case_type === 'Contract Dispute' || caseData.case_type === 'Employment') {
-        risk = 'Low';
+      
+      // Use AI-processed risk level if available
+      if (caseData.risk_level && caseData.ai_processed) {
+        risk = caseData.risk_level as 'Low' | 'Medium' | 'High';
+      } else {
+        // Fallback to case type-based risk assessment
+        if (caseData.case_type === 'Medical Malpractice' || caseData.case_type === 'Product Liability') {
+          risk = 'High';
+        } else if (caseData.case_type === 'Contract Dispute' || caseData.case_type === 'Employment') {
+          risk = 'Low';
+        }
       }
 
       const transformedCase = {

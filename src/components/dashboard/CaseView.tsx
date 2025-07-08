@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, FileText, Calendar, User, Building, AlertTriangle, CheckCircle, Clock, DollarSign, TrendingUp, BarChart3, Copy } from 'lucide-react';
+import { ArrowLeft, FileText, Calendar, User, Building, AlertTriangle, CheckCircle, Clock, DollarSign, TrendingUp, BarChart3, Copy, RefreshCw, Play, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -13,6 +13,7 @@ import { useState, useEffect, useMemo, useCallback, Component, ReactNode } from 
 import { CompleteCase } from '@/utils/case/types';
 import { useCaseAnalysis } from '@/hooks/useCaseAnalysis';
 import AnalysisStatusIndicator from '@/components/dashboard/AnalysisStatusIndicator';
+import { getCaseStatus, triggerCaseAnalysis } from '@/services/alegiApiService';
 
 // Import all the case insights widgets
 import PredictedOutcomeWidget from '@/components/dashboard/widgets/PredictedOutcomeWidget';
@@ -75,13 +76,16 @@ const CaseView = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [copyFeedback, setCopyFeedback] = useState(false);
   const [loadingPhase, setLoadingPhase] = useState<'case' | 'analysis' | 'complete'>('case');
+  const [processingStatus, setProcessingStatus] = useState<string | null>(null);
+  const [lastStatusCheck, setLastStatusCheck] = useState<Date | null>(null);
+  const [isManuallyTriggering, setIsManuallyTriggering] = useState(false);
 
   // Add the case analysis hook
   const analysisData = useCaseAnalysis(caseId);
 
   useEffect(() => {
     const loadCase = async () => {
-      if (!caseId) return;
+      if (!caseId || !session) return;
       
       setIsLoading(true);
       setLoadingPhase('case');
@@ -89,6 +93,15 @@ const CaseView = () => {
         const completeCase = await fetchCompleteCase(caseId, session);
         setCaseData(completeCase);
         setLoadingPhase('analysis');
+        
+        // Check processing status
+        try {
+          const status = await getCaseStatus(caseId, session);
+          setProcessingStatus(status?.status || null);
+          setLastStatusCheck(new Date());
+        } catch (statusError) {
+          console.warn('Failed to get case status:', statusError);
+        }
       } catch (error) {
         console.error('Error loading case:', error);
         setCaseData(null);
@@ -98,7 +111,7 @@ const CaseView = () => {
     };
 
     loadCase();
-  }, [caseId]);
+  }, [caseId, session]);
 
   if (isLoading || analysisData.isLoading) {
      return (
@@ -192,6 +205,27 @@ const CaseView = () => {
         return 'bg-gray-100 text-gray-800';
     }
   };
+
+  // Manual trigger for case analysis
+  const handleManualTrigger = useCallback(async () => {
+    if (!caseId || !session) return;
+    
+    setIsManuallyTriggering(true);
+    try {
+      await triggerCaseAnalysis(caseId, session);
+      setProcessingStatus('processing');
+      setLastStatusCheck(new Date());
+      
+      // Refresh analysis data after triggering
+      setTimeout(() => {
+        analysisData.refreshAnalysis();
+      }, 2000);
+    } catch (error) {
+      console.error('Failed to trigger analysis:', error);
+    } finally {
+      setIsManuallyTriggering(false);
+    }
+  }, [caseId, session, analysisData]);
 
   // Check if API is unavailable (Service unavailable errors)
   const isAPIUnavailable = analysisData.errors.some(e => 
@@ -615,39 +649,55 @@ const CaseView = () => {
               </div>
             </div>
 
-            {/* Analysis Status Notification */}
-            {analysisData.analysisStatus === 'pending' && (
+            {/* Processing Status Notifications */}
+            {processingStatus === 'pending' && !analysisData.hasAnyData && (
               <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                 <div className="flex items-start">
-                  <Clock className="h-5 w-5 text-blue-500 mt-0.5 mr-3" />
+                  <Play className="h-5 w-5 text-blue-500 mt-0.5 mr-3" />
                   <div className="flex-1">
-                    <h3 className="text-sm font-medium text-blue-900">Analysis Pending</h3>
+                    <h3 className="text-sm font-medium text-blue-900">Ready for Analysis</h3>
                     <p className="text-sm text-blue-700 mt-1">
-                      Your case is ready for AI analysis. Click the button below to start the analysis process.
+                      Your case is ready for AI analysis. Click the button below to start the linear pipeline processing.
                     </p>
                   </div>
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={analysisData.refreshAnalysis}
+                    onClick={handleManualTrigger}
+                    disabled={isManuallyTriggering}
                     className="ml-4"
                   >
-                    Start Analysis
+                    {isManuallyTriggering ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Starting...
+                      </>
+                    ) : (
+                      <>
+                        <Play className="h-4 w-4 mr-2" />
+                        Start Analysis
+                      </>
+                    )}
                   </Button>
                 </div>
               </div>
             )}
 
-            {analysisData.analysisStatus === 'processing' && (
+            {(processingStatus === 'processing' || analysisData.analysisStatus === 'processing') && (
               <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
                 <div className="flex items-start">
-                  <Clock className="h-5 w-5 text-yellow-500 mt-0.5 mr-3" />
+                  <Loader2 className="h-5 w-5 text-yellow-500 mt-0.5 mr-3 animate-spin" />
                   <div className="flex-1">
-                    <h3 className="text-sm font-medium text-yellow-900">Analysis in Progress</h3>
+                    <h3 className="text-sm font-medium text-yellow-900">Linear Pipeline Processing</h3>
                     <p className="text-sm text-yellow-700 mt-1">
-                      Your case is being analyzed by AI. This typically takes 2-5 minutes to complete. 
-                      You can view the basic case information below while the analysis is being processed.
+                      Your case is being processed through our comprehensive AI analysis pipeline. This includes PDF extraction, 
+                      legal research, jurisdiction analysis, and prediction modeling. This typically takes 3-7 minutes to complete.
                     </p>
+                    {lastStatusCheck && (
+                      <p className="text-xs text-yellow-600 mt-2">
+                        Last checked: {lastStatusCheck.toLocaleTimeString()}
+                      </p>
+                    )}
                   </div>
                   <Button
                     variant="outline"
@@ -655,20 +705,21 @@ const CaseView = () => {
                     onClick={analysisData.refreshAnalysis}
                     className="ml-4"
                   >
+                    <RefreshCw className="h-4 w-4 mr-1" />
                     Refresh
                   </Button>
                 </div>
               </div>
             )}
 
-            {analysisData.analysisStatus === 'complete' && (
+            {(processingStatus === 'completed' || analysisData.analysisStatus === 'complete') && analysisData.hasAnyData && (
               <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
                 <div className="flex items-start">
                   <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 mr-3" />
                   <div className="flex-1">
-                    <h3 className="text-sm font-medium text-green-900">Analysis Complete</h3>
+                    <h3 className="text-sm font-medium text-green-900">Linear Pipeline Complete</h3>
                     <p className="text-sm text-green-700 mt-1">
-                      AI analysis has been completed. You can now view detailed insights and predictions.
+                      Comprehensive AI analysis has been completed. All insights, predictions, and recommendations are now available.
                     </p>
                   </div>
                   <div className="flex space-x-2">
@@ -677,16 +728,52 @@ const CaseView = () => {
                       size="sm"
                       onClick={analysisData.refreshAnalysis}
                     >
+                      <RefreshCw className="h-4 w-4 mr-1" />
                       Refresh
                     </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={analysisData.triggerEnhancedAnalysis}
-                    >
-                      Enhanced Analysis
-                    </Button>
+                    {analysisData.triggerEnhancedAnalysis && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={analysisData.triggerEnhancedAnalysis}
+                      >
+                        Re-process
+                      </Button>
+                    )}
                   </div>
+                </div>
+              </div>
+            )}
+
+            {processingStatus === 'failed' && (
+              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                <div className="flex items-start">
+                  <AlertTriangle className="h-5 w-5 text-red-500 mt-0.5 mr-3" />
+                  <div className="flex-1">
+                    <h3 className="text-sm font-medium text-red-900">Processing Failed</h3>
+                    <p className="text-sm text-red-700 mt-1">
+                      The AI analysis pipeline encountered an error. You can retry the analysis or contact support for assistance.
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleManualTrigger}
+                    disabled={isManuallyTriggering}
+                    className="ml-4"
+                  >
+                    {isManuallyTriggering ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Retrying...
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                        Retry Analysis
+                      </>
+                    )}
+                  </Button>
                 </div>
               </div>
             )}
@@ -719,8 +806,13 @@ const CaseView = () => {
                           <div className="text-center">
                             <div className="text-2xl font-bold text-blue-600">{transformedCase.confidence}%</div>
                             <div className="text-sm text-gray-600">
-                              {analysisData.isAnalysisComplete ? 'AI Confidence' : 'Preliminary Score'}
+                              {analysisData.hasAnyData ? 'Success Probability' : 'Preliminary Score'}
                             </div>
+                            {analysisData.predictions?.prediction_confidence && (
+                              <div className="text-xs text-gray-500 mt-1">
+                                Confidence: {analysisData.predictions.prediction_confidence}
+                              </div>
+                            )}
                           </div>
                           <div className="text-center">
                             <div className="text-2xl font-bold text-green-600">
@@ -733,10 +825,20 @@ const CaseView = () => {
                           <div className="text-center">
                             <div className="text-2xl font-bold text-purple-600">{transformedCase.daysActive}</div>
                             <div className="text-sm text-gray-600">Days Active</div>
+                            {analysisData.predictions?.estimated_timeline && (
+                              <div className="text-xs text-gray-500 mt-1">
+                                Est. {analysisData.predictions.estimated_timeline}
+                              </div>
+                            )}
                           </div>
                           <div className="text-center">
                             <div className="text-2xl font-bold text-orange-600">{caseData.documents?.length || 0}</div>
                             <div className="text-sm text-gray-600">Documents</div>
+                            {analysisData.predictions?.case_complexity_score && (
+                              <div className="text-xs text-gray-500 mt-1">
+                                Complexity: {Math.round(analysisData.predictions.case_complexity_score)}
+                              </div>
+                            )}
                           </div>
                         </div>
                       </CardContent>
