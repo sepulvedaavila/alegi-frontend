@@ -2,6 +2,7 @@ import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { CaseStatus } from '@/hooks/useCaseNotifications';
 import { retryWithBackoff } from '@/utils/apiRetry';
+import { getValidJWTToken, createAuthHeaders, handleAuthError } from '@/utils/auth';
 
 export interface UserCaseStatus {
   caseId: string;
@@ -12,9 +13,8 @@ export interface UserCaseStatus {
   createdAt: string;
 }
 
-export interface CaseStatusResponse {
+interface CaseStatusResponse {
   cases: UserCaseStatus[];
-  timestamp: string;
 }
 
 // Get backend URL from environment or use default
@@ -24,9 +24,48 @@ const getBackendUrl = () => {
   return url;
 };
 
-// Get JWT token from Supabase session
-const getJwtToken = (session: any) => {
-  return session?.access_token;
+/**
+ * Generic API call wrapper with authentication and retry logic
+ */
+const makeAuthenticatedAPICall = async (endpoint: string, session: any) => {
+  const headers = await createAuthHeaders(session);
+  if (!headers) {
+    throw new Error('No authentication token available');
+  }
+
+  const response = await fetch(`${getBackendUrl()}${endpoint}`, {
+    headers
+  });
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      // Try to refresh token and retry once
+      try {
+        const refreshedHeaders = await createAuthHeaders(session);
+        if (refreshedHeaders) {
+          console.log('Retrying API call with refreshed token:', endpoint);
+          const retryResponse = await fetch(`${getBackendUrl()}${endpoint}`, {
+            headers: refreshedHeaders
+          });
+          
+          if (retryResponse.ok) {
+            return await retryResponse.json();
+          }
+        }
+      } catch (refreshError) {
+        console.error('Failed to refresh token for retry:', refreshError);
+      }
+      throw new Error('Authentication failed');
+    } else if (response.status === 403) {
+      throw new Error('Access denied');
+    } else if (response.status === 404) {
+      throw new Error('Resource not found');
+    } else {
+      throw new Error(`Failed to fetch data: ${response.statusText}`);
+    }
+  }
+
+  return await response.json();
 };
 
 /**
@@ -34,36 +73,14 @@ const getJwtToken = (session: any) => {
  */
 export const fetchAllUserCasesStatus = async (session: any): Promise<UserCaseStatus[]> => {
   const result = await retryWithBackoff(async () => {
-    const token = getJwtToken(session);
-    if (!token) {
-      throw new Error('No authentication token available');
-    }
-
-    const response = await fetch(`${getBackendUrl()}/api/cases/status`, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
-
-    if (!response.ok) {
-      if (response.status === 401) {
-        throw new Error('Authentication failed');
-      } else if (response.status === 403) {
-        throw new Error('Access denied');
-      } else {
-        throw new Error(`Failed to fetch cases status: ${response.statusText}`);
-      }
-    }
-
-    const data: CaseStatusResponse = await response.json();
-    return data.cases;
+    return await makeAuthenticatedAPICall('/api/cases/status', session);
   });
 
   if (!result) {
     throw new Error('Failed to fetch user cases status after retries');
   }
 
-  return result;
+  return result.cases;
 };
 
 /**
@@ -71,31 +88,7 @@ export const fetchAllUserCasesStatus = async (session: any): Promise<UserCaseSta
  */
 export const fetchCaseStatus = async (caseId: string, session: any): Promise<CaseStatus> => {
   const result = await retryWithBackoff(async () => {
-    const token = getJwtToken(session);
-    if (!token) {
-      throw new Error('No authentication token available');
-    }
-
-    const response = await fetch(`${getBackendUrl()}/api/cases/${caseId}/status`, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
-
-    if (!response.ok) {
-      if (response.status === 401) {
-        throw new Error('Authentication failed');
-      } else if (response.status === 403) {
-        throw new Error('Access denied');
-      } else if (response.status === 404) {
-        throw new Error('Case not found');
-      } else {
-        throw new Error(`Failed to fetch case status: ${response.statusText}`);
-      }
-    }
-
-    const data: CaseStatus = await response.json();
-    return data;
+    return await makeAuthenticatedAPICall(`/api/cases/${caseId}/status`, session);
   });
 
   if (!result) {
@@ -110,24 +103,13 @@ export const fetchCaseStatus = async (caseId: string, session: any): Promise<Cas
  */
 export const checkWebSocketAvailability = async (session: any): Promise<boolean> => {
   const result = await retryWithBackoff(async () => {
-    const token = getJwtToken(session);
-    if (!token) {
-      console.warn('No JWT token available for WebSocket availability check');
+    try {
+      const data = await makeAuthenticatedAPICall('/api/realtime/stats', session);
+      return data.available || false;
+    } catch (error) {
+      console.warn('WebSocket availability check failed:', error);
       return false;
     }
-
-    const response = await fetch(`${getBackendUrl()}/api/realtime/stats`, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
-
-    if (response.ok) {
-      const data = await response.json();
-      return data.available || false;
-    }
-
-    return false;
   });
 
   return result || false;
@@ -138,31 +120,7 @@ export const checkWebSocketAvailability = async (session: any): Promise<boolean>
  */
 export const fetchEnhancedCaseStatus = async (caseId: string, session: any): Promise<any> => {
   const result = await retryWithBackoff(async () => {
-    const token = getJwtToken(session);
-    if (!token) {
-      throw new Error('No authentication token available');
-    }
-
-    const response = await fetch(`${getBackendUrl()}/api/cases/${caseId}/enhanced-status`, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
-
-    if (!response.ok) {
-      if (response.status === 401) {
-        throw new Error('Authentication failed');
-      } else if (response.status === 403) {
-        throw new Error('Access denied');
-      } else if (response.status === 404) {
-        throw new Error('Case not found');
-      } else {
-        throw new Error(`Failed to fetch enhanced case status: ${response.statusText}`);
-      }
-    }
-
-    const data = await response.json();
-    return data;
+    return await makeAuthenticatedAPICall(`/api/cases/${caseId}/enhanced-status`, session);
   });
 
   if (!result) {
@@ -177,31 +135,7 @@ export const fetchEnhancedCaseStatus = async (caseId: string, session: any): Pro
  */
 export const checkCaseUpdates = async (caseId: string, lastUpdate: string, session: any): Promise<any> => {
   const result = await retryWithBackoff(async () => {
-    const token = getJwtToken(session);
-    if (!token) {
-      throw new Error('No authentication token available');
-    }
-
-    const response = await fetch(`${getBackendUrl()}/api/cases/${caseId}/updates?lastUpdate=${lastUpdate}`, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
-
-    if (!response.ok) {
-      if (response.status === 401) {
-        throw new Error('Authentication failed');
-      } else if (response.status === 403) {
-        throw new Error('Access denied');
-      } else if (response.status === 404) {
-        throw new Error('Case not found');
-      } else {
-        throw new Error(`Failed to check case updates: ${response.statusText}`);
-      }
-    }
-
-    const data = await response.json();
-    return data;
+    return await makeAuthenticatedAPICall(`/api/cases/${caseId}/updates?lastUpdate=${lastUpdate}`, session);
   });
 
   if (!result) {

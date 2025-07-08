@@ -1,5 +1,6 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { retryWithBackoff } from '@/utils/apiRetry';
+import { getValidJWTToken, createAuthHeaders, handleAuthError } from '@/utils/auth';
 
 // Get backend URL from environment or use default
 const getBackendUrl = () => {
@@ -8,38 +9,25 @@ const getBackendUrl = () => {
   return url;
 };
 
-// Get JWT token from Supabase session
-const getJwtToken = (session: any) => {
-  const token = session?.access_token;
-  if (!token) {
-    console.error('No access token found in session:', session);
-  }
-  return token;
-};
-
-// Generic API call wrapper with error handling
+// Generic API call wrapper with error handling and token refresh
 const makeAPICall = async (endpoint: string, session: any) => {
-  if (!session || !session.access_token) {
-    console.error('Invalid session for API call:', endpoint);
+  if (!session) {
+    console.error('No session available for API call:', endpoint);
     return null;
   }
-  const token = getJwtToken(session);
+
+  const headers = await createAuthHeaders(session);
+  if (!headers) {
+    console.error('Failed to create auth headers for API call:', endpoint);
+    return null;
+  }
 
   console.log(`Making API call to: ${getBackendUrl()}${endpoint}`);
-  
-  if (!token) {
-    console.error('No authentication token available for API call:', endpoint);
-    return null;
-  }
   
   try {
     const response = await fetch(`${getBackendUrl()}${endpoint}`, {
       method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      }
+      headers
     });
 
     if (!response.ok) {
@@ -49,8 +37,26 @@ const makeAPICall = async (endpoint: string, session: any) => {
         statusText: response.statusText,
         body: errorBody
       });
+      
       if (response.status === 401) {
         console.warn('Authentication failed for API call:', endpoint);
+        // Try to refresh token and retry once
+        try {
+          const refreshedHeaders = await createAuthHeaders(session);
+          if (refreshedHeaders) {
+            console.log('Retrying API call with refreshed token:', endpoint);
+            const retryResponse = await fetch(`${getBackendUrl()}${endpoint}`, {
+              method: 'GET',
+              headers: refreshedHeaders
+            });
+            
+            if (retryResponse.ok) {
+              return await retryResponse.json();
+            }
+          }
+        } catch (refreshError) {
+          console.error('Failed to refresh token for retry:', refreshError);
+        }
         return null;
       } else if (response.status === 403) {
         console.warn('Access denied for API call:', endpoint);
@@ -71,14 +77,7 @@ const makeAPICall = async (endpoint: string, session: any) => {
 
     return await response.json();
   } catch (error) {
-    // Handle network errors (CORS, connection issues, etc.)
-    if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
-      console.warn('Network error for API call:', endpoint, error.message);
-      return null;
-    }
-    
-    // Return null for other errors instead of throwing
-    console.warn('Error in API call:', endpoint, error);
+    console.error(`Network error for ${endpoint}:`, error);
     return null;
   }
 };

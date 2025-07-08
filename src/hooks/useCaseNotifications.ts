@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { getValidJWTToken, createAuthHeaders, handleAuthError } from '@/utils/auth';
 
 export interface CaseNotification {
   type: 'case_processing_started' | 'case_processing_completed' | 'case_processing_failed';
@@ -62,16 +63,16 @@ const useCaseNotifications = (options: UseCaseNotificationsOptions = {}) => {
     return `${wsUrl}/ws`;
   };
 
-  // Get JWT token from Supabase session
-  const getJwtToken = useCallback(() => {
-    return session?.access_token;
+  // Get JWT token with validation and refresh
+  const getJwtToken = useCallback(async () => {
+    return await getValidJWTToken(session);
   }, [session]);
 
   // WebSocket connection
-  const connectWebSocket = useCallback(() => {
+  const connectWebSocket = useCallback(async () => {
     if (!enableWebSocket || !caseId) return;
 
-    const token = getJwtToken();
+    const token = await getJwtToken();
     if (!token) {
       console.warn('No JWT token available for WebSocket connection');
       startPolling();
@@ -163,7 +164,7 @@ const useCaseNotifications = (options: UseCaseNotificationsOptions = {}) => {
   }, [caseId, enableWebSocket, getJwtToken]);
 
   // Polling fallback
-  const startPolling = useCallback(() => {
+  const startPolling = useCallback(async () => {
     if (!caseId) return;
 
     if (pollingIntervalRef.current) {
@@ -178,17 +179,15 @@ const useCaseNotifications = (options: UseCaseNotificationsOptions = {}) => {
 
     const pollCaseStatus = async () => {
       try {
-        const token = getJwtToken();
-        if (!token) {
-          console.warn('No JWT token available for polling');
+        const headers = await createAuthHeaders(session);
+        if (!headers) {
+          console.warn('No valid JWT token available for polling');
           return;
         }
 
         // Use conditional polling endpoint if available, fallback to regular status
         const response = await fetch(`${getBackendUrl()}/api/cases/${caseId}/updates?lastUpdate=${lastUpdate}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
+          headers
         });
         
         if (response.ok) {
@@ -208,9 +207,7 @@ const useCaseNotifications = (options: UseCaseNotificationsOptions = {}) => {
           } else {
             // No updates, check regular status as fallback
             const statusResponse = await fetch(`${getBackendUrl()}/api/cases/${caseId}/status`, {
-              headers: {
-                'Authorization': `Bearer ${token}`
-              }
+              headers
             });
             
             if (statusResponse.ok) {
@@ -245,7 +242,7 @@ const useCaseNotifications = (options: UseCaseNotificationsOptions = {}) => {
     // Poll immediately, then at intervals
     pollCaseStatus();
     pollingIntervalRef.current = setInterval(pollCaseStatus, pollingInterval);
-  }, [caseId, pollingInterval, getJwtToken]);
+  }, [caseId, pollingInterval, session]);
 
   // Check WebSocket availability
   const checkWebSocketAvailability = useCallback(async () => {
@@ -255,17 +252,15 @@ const useCaseNotifications = (options: UseCaseNotificationsOptions = {}) => {
     }
 
     try {
-      const token = getJwtToken();
-      if (!token) {
-        console.warn('No JWT token available for WebSocket availability check');
+      const headers = await createAuthHeaders(session);
+      if (!headers) {
+        console.warn('No valid JWT token available for WebSocket availability check');
         startPolling();
         return;
       }
 
       const response = await fetch(`${getBackendUrl()}/api/realtime/stats`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+        headers
       });
       
       if (response.ok) {
@@ -284,23 +279,21 @@ const useCaseNotifications = (options: UseCaseNotificationsOptions = {}) => {
       console.error('Failed to check WebSocket availability:', error);
       startPolling();
     }
-  }, [enableWebSocket, connectWebSocket, startPolling, getJwtToken]);
+  }, [enableWebSocket, connectWebSocket, startPolling, session]);
 
   // Manual status refresh
   const refreshStatus = useCallback(async () => {
     if (!caseId) return;
 
     try {
-      const token = getJwtToken();
-      if (!token) {
+      const headers = await createAuthHeaders(session);
+      if (!headers) {
         setError('No authentication token available');
         return;
       }
 
       const response = await fetch(`${getBackendUrl()}/api/cases/${caseId}/status`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+        headers
       });
       
       if (response.ok) {
@@ -314,7 +307,7 @@ const useCaseNotifications = (options: UseCaseNotificationsOptions = {}) => {
       console.error('Error refreshing status:', error);
       setError('Failed to refresh case status');
     }
-  }, [caseId, getJwtToken]);
+  }, [caseId, session]);
 
   // Subscribe to a specific case
   const subscribeToCase = useCallback((newCaseId: string) => {

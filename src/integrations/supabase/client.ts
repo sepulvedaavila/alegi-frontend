@@ -12,4 +12,29 @@ if (!supabaseUrl || !supabaseAnonKey) {
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    // Enable automatic token refresh
+    autoRefreshToken: true,
+    // Persist session in localStorage
+    persistSession: true,
+    // Detect session in URL (for OAuth flows)
+    detectSessionInUrl: true,
+    // Flow type for OAuth
+    flowType: 'pkce',
+    // Debug mode for development
+    debug: import.meta.env.DEV,
+  },
+  // Global headers for all requests
+  global: {
+    headers: {
+      'X-Client-Info': 'alegi-frontend',
+    },
+  },
+  // Real-time configuration
+  realtime: {
+    params: {
+      eventsPerSecond: 10,
+    },
+  },
+});

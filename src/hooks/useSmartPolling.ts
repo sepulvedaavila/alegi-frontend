@@ -11,6 +11,7 @@ import {
   fetchFinancialPrediction,
   fetchTimelineEstimate
 } from '@/services/caseAnalysisService';
+import { useAuthenticatedApi } from './useAuthenticatedApi';
 
 // Smart polling hook for real-time updates
 export const useSmartPolling = <TData>(
@@ -247,15 +248,12 @@ export const useResolutionTimeline = (caseId: string) => {
 };
 
 export const useAnalyzedCasesStats = () => {
+  const { get } = useAuthenticatedApi();
+  
   return useSmartPolling(
     ['analyzed-cases-stats'],
     async () => {
-      // TODO: Replace with actual API call
-      const response = await fetch('/api/analyzed-cases/stats');
-      if (!response.ok) {
-        throw new Error('Failed to fetch analyzed cases stats');
-      }
-      return response.json();
+      return await get('/api/analyzed-cases/stats');
     },
     {
       staleTime: 900000, // Consider data fresh for 15 minutes
@@ -264,18 +262,15 @@ export const useAnalyzedCasesStats = () => {
 };
 
 export const useSimilarCases = (caseId: string, searchTerm?: string) => {
+  const { get } = useAuthenticatedApi();
+  
   return useSmartPolling(
     ['similar-cases', caseId, searchTerm],
     async () => {
-      // TODO: Replace with actual API call
       const params = new URLSearchParams();
       if (searchTerm) params.append('search', searchTerm);
       
-      const response = await fetch(`/api/cases/${caseId}/similar?${params}`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch similar cases');
-      }
-      return response.json();
+      return await get(`/api/cases/${caseId}/similar?${params}`);
     },
     {
       enabled: !!caseId,
@@ -285,18 +280,15 @@ export const useSimilarCases = (caseId: string, searchTerm?: string) => {
 };
 
 export const useLawUpdates = (jurisdiction?: string) => {
+  const { get } = useAuthenticatedApi();
+  
   return useSmartPolling(
     ['law-updates', jurisdiction],
     async () => {
-      // TODO: Replace with actual API call
       const params = new URLSearchParams();
       if (jurisdiction) params.append('jurisdiction', jurisdiction);
       
-      const response = await fetch(`/api/law-updates?${params}`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch law updates');
-      }
-      return response.json();
+      return await get(`/api/law-updates?${params}`);
     },
     {
       staleTime: 1800000, // Consider data fresh for 30 minutes
