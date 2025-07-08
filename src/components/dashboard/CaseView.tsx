@@ -72,6 +72,7 @@ const CaseView = () => {
   const [caseData, setCaseData] = useState<CompleteCase | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [copyFeedback, setCopyFeedback] = useState(false);
+  const [loadingPhase, setLoadingPhase] = useState<'case' | 'analysis' | 'complete'>('case');
 
   // Add the case analysis hook
   const analysisData = useCaseAnalysis(caseId);
@@ -81,9 +82,11 @@ const CaseView = () => {
       if (!caseId) return;
       
       setIsLoading(true);
+      setLoadingPhase('case');
       try {
         const completeCase = await fetchCompleteCase(caseId);
         setCaseData(completeCase);
+        setLoadingPhase('analysis');
       } catch (error) {
         console.error('Error loading case:', error);
         setCaseData(null);
@@ -96,22 +99,24 @@ const CaseView = () => {
   }, [caseId]);
 
   if (isLoading || analysisData.isLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-center">
-          <div className="text-xl font-semibold mb-4">Loading case...</div>
-          {analysisData.isLoading && (
-            <div className="text-sm text-gray-600">
-              <div className="flex items-center justify-center space-x-2">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
-                <span>Loading analysis data...</span>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
+     return (
+       <div className="flex min-h-screen items-center justify-center">
+         <div className="text-center">
+           <div className="text-xl font-semibold mb-4">
+             {loadingPhase === 'case' ? 'Loading case data...' : 'Loading analysis...'}
+           </div>
+           <div className="text-sm text-gray-600">
+             <div className="flex items-center justify-center space-x-2">
+               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+               <span>
+                 {loadingPhase === 'case' ? 'Fetching case information' : 'Processing AI analysis'}
+               </span>
+             </div>
+           </div>
+         </div>
+       </div>
+     );
+   }
 
   if (!caseData) {
     return (
@@ -159,6 +164,215 @@ const CaseView = () => {
 
   // Check if analysis data is not available but case data is loaded
   const hasNoAnalysisData = !analysisData.hasAnyData && !analysisData.isLoading && analysisData.errors.length === 0;
+
+  // Helper functions for status colors
+  const getStatusColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'active':
+        return 'bg-green-100 text-green-800';
+      case 'closed':
+        return 'bg-gray-100 text-gray-800';
+      case 'pending':
+        return 'bg-yellow-100 text-yellow-800';
+      default:
+        return 'bg-blue-100 text-blue-800';
+    }
+  };
+
+  const getRiskColor = (risk: string) => {
+    switch (risk.toLowerCase()) {
+      case 'high':
+        return 'bg-red-100 text-red-800';
+      case 'medium':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'low':
+        return 'bg-green-100 text-green-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  // Check if API is unavailable (Service unavailable errors)
+  const isAPIUnavailable = analysisData.errors.some(e => 
+    e.error?.message?.includes('Service unavailable') ||
+    e.error?.message?.includes('Failed to fetch') ||
+    e.error?.message?.includes('Network error')
+  );
+
+  // Show fallback UI when API is unavailable
+  if (isAPIUnavailable) {
+    return (
+      <div className="min-h-full bg-gray-50">
+        <div className="py-6">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            {/* Header */}
+            <div className="mb-8">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <Button
+                    variant="ghost"
+                    onClick={() => navigate('/dashboard')}
+                    className="p-2"
+                  >
+                    <ArrowLeft className="h-5 w-5" />
+                  </Button>
+                  <div>
+                    <h1 className="text-3xl font-bold text-gray-900">
+                      {caseData.caseDetails?.case_name || `Case ${caseData.caseDetails?.case_number || caseId}`}
+                    </h1>
+                    <div className="flex items-center space-x-2">
+                      <p className="text-gray-600">Case ID: {caseId}</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <Badge className={getStatusColor(caseData.caseDetails?.case_stage === 'Settled' || caseData.caseDetails?.case_stage === 'Closed' ? 'Closed' : 'Active')}>
+                    {caseData.caseDetails?.case_stage || 'Pending'}
+                  </Badge>
+                  <Button
+                    variant="ghost"
+                    onClick={() => toggleFavorite(caseId || '')}
+                    className={isFavorite(caseId || '') ? 'text-yellow-500' : 'text-gray-400'}
+                  >
+                    ★
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            {/* Limited Functionality Notice */}
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+              <h3 className="text-lg font-medium text-yellow-900">Limited Functionality</h3>
+              <p className="text-yellow-700 mt-1">
+                AI analysis services are temporarily unavailable. Basic case information is shown below.
+              </p>
+            </div>
+
+            {/* Basic Case Information */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <FileText className="mr-2 h-5 w-5" />
+                    Case Details
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Case Type</label>
+                      <p className="text-sm text-gray-900">{caseData.caseDetails?.case_type || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Case Stage</label>
+                      <p className="text-sm text-gray-900">{caseData.caseDetails?.case_stage || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Date Filed</label>
+                      <p className="text-sm text-gray-900">
+                        {caseData.caseDetails?.date_filed ? 
+                          new Date(caseData.caseDetails.date_filed).toLocaleDateString() : 
+                          'N/A'
+                        }
+                      </p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Created</label>
+                      <p className="text-sm text-gray-900">
+                        {caseData.caseDetails?.created_at ? 
+                          new Date(caseData.caseDetails.created_at).toLocaleDateString() : 
+                          'N/A'
+                        }
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <User className="mr-2 h-5 w-5" />
+                    Parties
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {(caseData.plaintiffs?.length > 0 || caseData.defendants?.length > 0) ? (
+                    <div className="space-y-3">
+                      {[...(caseData.plaintiffs || []), ...(caseData.defendants || [])].slice(0, 3).map((party, index) => (
+                        <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                          <div>
+                            <p className="font-medium text-sm">{party.name || 'Unknown Party'}</p>
+                            <p className="text-xs text-gray-500">
+                              {caseData.plaintiffs?.includes(party) ? 'Plaintiff' : 'Defendant'}
+                            </p>
+                          </div>
+                          <Badge variant="outline" className="text-xs">
+                            {caseData.plaintiffs?.includes(party) ? 'Plaintiff' : 'Defendant'}
+                          </Badge>
+                        </div>
+                      ))}
+                      {(caseData.plaintiffs?.length || 0) + (caseData.defendants?.length || 0) > 3 && (
+                        <p className="text-sm text-gray-500 text-center">
+                          +{(caseData.plaintiffs?.length || 0) + (caseData.defendants?.length || 0) - 3} more parties
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500">No party information available</p>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Documents Section */}
+            {caseData.documents && caseData.documents.length > 0 && (
+              <Card className="mt-6">
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <FileText className="mr-2 h-5 w-5" />
+                    Documents ({caseData.documents.length})
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {caseData.documents.slice(0, 6).map((doc, index) => (
+                      <div key={index} className="flex items-center p-3 border rounded-lg">
+                        <FileText className="h-8 w-8 text-gray-400 mr-3" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 truncate">
+                            {doc.file_name || `Document ${index + 1}`}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {doc.file_type || 'Unknown type'}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {caseData.documents.length > 6 && (
+                    <p className="text-sm text-gray-500 text-center mt-4">
+                      +{caseData.documents.length - 6} more documents
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Retry Button */}
+            <div className="mt-6 text-center">
+              <Button onClick={() => window.location.reload()} className="mr-2">
+                Retry Connection
+              </Button>
+              <Button variant="outline" onClick={() => navigate('/dashboard')}>
+                Back to Dashboard
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Transform the complete case data to match the expected format
   // Use useMemo to prevent recreation on every render
@@ -320,23 +534,7 @@ const CaseView = () => {
     caseId
   ]);
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Active': return 'bg-blue-100 text-blue-800';
-      case 'Pending': return 'bg-yellow-100 text-yellow-800';
-      case 'Closed': return 'bg-green-100 text-green-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
 
-  const getRiskColor = (risk: string) => {
-    switch (risk) {
-      case 'Low': return 'bg-green-100 text-green-800';
-      case 'Medium': return 'bg-yellow-100 text-yellow-800';
-      case 'High': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
 
   const copyCaseId = async () => {
     try {

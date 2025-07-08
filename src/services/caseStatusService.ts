@@ -1,6 +1,7 @@
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { CaseStatus } from '@/hooks/useCaseNotifications';
+import { retryWithBackoff } from '@/utils/apiRetry';
 
 export interface UserCaseStatus {
   caseId: string;
@@ -18,7 +19,9 @@ export interface CaseStatusResponse {
 
 // Get backend URL from environment or use default
 const getBackendUrl = () => {
-  return import.meta.env.VITE_BACKEND_URL || 'https://alegi-backend.vercel.app';
+  const url = import.meta.env.VITE_BACKEND_URL || 'https://alegi-backend.vercel.app';
+  console.log('Using backend URL:', url); // Add logging for debugging
+  return url;
 };
 
 // Get JWT token from Supabase session
@@ -30,7 +33,7 @@ const getJwtToken = (session: any) => {
  * Fetches status for all cases belonging to the current user
  */
 export const fetchAllUserCasesStatus = async (session: any): Promise<UserCaseStatus[]> => {
-  try {
+  const result = await retryWithBackoff(async () => {
     const token = getJwtToken(session);
     if (!token) {
       throw new Error('No authentication token available');
@@ -54,17 +57,20 @@ export const fetchAllUserCasesStatus = async (session: any): Promise<UserCaseSta
 
     const data: CaseStatusResponse = await response.json();
     return data.cases;
-  } catch (error) {
-    console.error('Error fetching user cases status:', error);
-    throw error;
+  });
+
+  if (!result) {
+    throw new Error('Failed to fetch user cases status after retries');
   }
+
+  return result;
 };
 
 /**
  * Fetches status for a specific case
  */
 export const fetchCaseStatus = async (caseId: string, session: any): Promise<CaseStatus> => {
-  try {
+  const result = await retryWithBackoff(async () => {
     const token = getJwtToken(session);
     if (!token) {
       throw new Error('No authentication token available');
@@ -90,17 +96,20 @@ export const fetchCaseStatus = async (caseId: string, session: any): Promise<Cas
 
     const data: CaseStatus = await response.json();
     return data;
-  } catch (error) {
-    console.error('Error fetching case status:', error);
-    throw error;
+  });
+
+  if (!result) {
+    throw new Error('Failed to fetch case status after retries');
   }
+
+  return result;
 };
 
 /**
  * Checks if WebSocket service is available
  */
 export const checkWebSocketAvailability = async (session: any): Promise<boolean> => {
-  try {
+  const result = await retryWithBackoff(async () => {
     const token = getJwtToken(session);
     if (!token) {
       console.warn('No JWT token available for WebSocket availability check');
@@ -119,17 +128,16 @@ export const checkWebSocketAvailability = async (session: any): Promise<boolean>
     }
 
     return false;
-  } catch (error) {
-    console.error('Failed to check WebSocket availability:', error);
-    return false;
-  }
+  });
+
+  return result || false;
 };
 
 /**
  * Fetches enhanced status for a specific case with processing timestamps
  */
 export const fetchEnhancedCaseStatus = async (caseId: string, session: any): Promise<any> => {
-  try {
+  const result = await retryWithBackoff(async () => {
     const token = getJwtToken(session);
     if (!token) {
       throw new Error('No authentication token available');
@@ -155,17 +163,20 @@ export const fetchEnhancedCaseStatus = async (caseId: string, session: any): Pro
 
     const data = await response.json();
     return data;
-  } catch (error) {
-    console.error('Error fetching enhanced case status:', error);
-    throw error;
+  });
+
+  if (!result) {
+    throw new Error('Failed to fetch enhanced case status after retries');
   }
+
+  return result;
 };
 
 /**
  * Checks for case updates since last check
  */
 export const checkCaseUpdates = async (caseId: string, lastUpdate: string, session: any): Promise<any> => {
-  try {
+  const result = await retryWithBackoff(async () => {
     const token = getJwtToken(session);
     if (!token) {
       throw new Error('No authentication token available');
@@ -191,17 +202,20 @@ export const checkCaseUpdates = async (caseId: string, lastUpdate: string, sessi
 
     const data = await response.json();
     return data;
-  } catch (error) {
-    console.error('Error checking case updates:', error);
-    throw error;
+  });
+
+  if (!result) {
+    throw new Error('Failed to check case updates after retries');
   }
+
+  return result;
 };
 
 /**
  * Checks backend health and available features
  */
 export const checkBackendHealth = async (): Promise<any> => {
-  try {
+  const result = await retryWithBackoff(async () => {
     const response = await fetch(`${getBackendUrl()}/api/health`);
 
     if (!response.ok) {
@@ -210,10 +224,13 @@ export const checkBackendHealth = async (): Promise<any> => {
 
     const data = await response.json();
     return data;
-  } catch (error) {
-    console.error('Error checking backend health:', error);
-    throw error;
+  });
+
+  if (!result) {
+    throw new Error('Failed to check backend health after retries');
   }
+
+  return result;
 };
 
 /**

@@ -10,22 +10,27 @@ export const fetchCasePredictions = async (caseId: string) => {
       .single();
 
     if (error) {
-      // Log the specific error for debugging
-      console.warn('Error fetching case predictions:', error);
-      
-      // If it's a no rows error or table doesn't exist, return null gracefully
-      if (error.code === 'PGRST116' || error.code === '42P01' || error.message?.includes('406')) {
-        console.log('No predictions found for case or table not available');
+      // Check for specific error codes
+      if (error.code === 'PGRST116') {
+        console.log('No predictions found for case - case might not be processed yet');
+        return null;
+      }
+      if (error.code === '42P01') {
+        console.error('Table case_predictions does not exist');
+        return null;
+      }
+      if (error.message?.includes('406') || error.message?.includes('Not Acceptable')) {
+        console.log('Schema mismatch or access issue for case_predictions');
         return null;
       }
       
-      // For other errors, still return null but log the error
+      console.warn('Unexpected error fetching case predictions:', error);
       return null;
     }
 
     return data;
   } catch (error) {
-    console.error('Error fetching case predictions:', error);
+    console.error('Exception in fetchCasePredictions:', error);
     return null;
   }
 };

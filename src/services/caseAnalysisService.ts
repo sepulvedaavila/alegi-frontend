@@ -1,23 +1,37 @@
 import { useAuth } from '@/contexts/AuthContext';
+import { retryWithBackoff } from '@/utils/apiRetry';
 
 // Get backend URL from environment or use default
 const getBackendUrl = () => {
-  return import.meta.env.VITE_BACKEND_URL || 'https://alegi-backend.vercel.app';
+  const url = import.meta.env.VITE_BACKEND_URL || 'https://alegi-backend.vercel.app';
+  console.log('Using backend URL:', url); // Add logging for debugging
+  return url;
 };
 
 // Get JWT token from Supabase session
 const getJwtToken = (session: any) => {
-  return session?.access_token;
+  const token = session?.access_token;
+  if (!token) {
+    console.error('No access token found in session:', session);
+  }
+  return token;
 };
 
 // Generic API call wrapper with error handling
 const makeAPICall = async (endpoint: string, session: any) => {
-  const token = getJwtToken(session);
-  if (!token) {
-    console.warn('No authentication token available for API call');
+  if (!session || !session.access_token) {
+    console.error('Invalid session for API call:', endpoint);
     return null;
   }
+  const token = getJwtToken(session);
 
+  console.log(`Making API call to: ${getBackendUrl()}${endpoint}`);
+  
+  if (!token) {
+    console.error('No authentication token available for API call:', endpoint);
+    return null;
+  }
+  
   try {
     const response = await fetch(`${getBackendUrl()}${endpoint}`, {
       method: 'GET',
@@ -29,6 +43,12 @@ const makeAPICall = async (endpoint: string, session: any) => {
     });
 
     if (!response.ok) {
+      const errorBody = await response.text();
+      console.error(`API Error for ${endpoint}:`, {
+        status: response.status,
+        statusText: response.statusText,
+        body: errorBody
+      });
       if (response.status === 401) {
         console.warn('Authentication failed for API call:', endpoint);
         return null;
@@ -41,6 +61,8 @@ const makeAPICall = async (endpoint: string, session: any) => {
       } else if (response.status === 406) {
         console.log('Analysis not acceptable - case may not be processed yet:', endpoint);
         return null;
+      } else if (response.status === 503) {
+        console.warn('Service unavailable - backend might be starting up');
       } else {
         console.warn(`API error for ${endpoint}:`, response.status, response.statusText);
         return null;
@@ -63,75 +85,35 @@ const makeAPICall = async (endpoint: string, session: any) => {
 
 // Case Analysis API Functions
 export const fetchCaseProbabilityAnalysis = async (caseId: string, session: any) => {
-  try {
-    return await makeAPICall(`/api/cases/${caseId}/probability`, session);
-  } catch (error) {
-    console.warn('Error fetching probability analysis:', error);
-    return null;
-  }
+  return retryWithBackoff(() => makeAPICall(`/api/cases/${caseId}/probability`, session));
 };
 
 export const fetchCaseRiskAssessment = async (caseId: string, session: any) => {
-  try {
-    return await makeAPICall(`/api/cases/${caseId}/risk-assessment`, session);
-  } catch (error) {
-    console.warn('Error fetching risk assessment:', error);
-    return null;
-  }
+  return retryWithBackoff(() => makeAPICall(`/api/cases/${caseId}/risk-assessment`, session));
 };
 
 export const fetchCasePrecedents = async (caseId: string, session: any) => {
-  try {
-    return await makeAPICall(`/api/cases/${caseId}/precedents`, session);
-  } catch (error) {
-    console.warn('Error fetching precedents:', error);
-    return null;
-  }
+  return retryWithBackoff(() => makeAPICall(`/api/cases/${caseId}/precedents`, session));
 };
 
 export const fetchJudgeAnalysis = async (caseId: string, session: any) => {
-  try {
-    return await makeAPICall(`/api/cases/${caseId}/judge-trends`, session);
-  } catch (error) {
-    console.warn('Error fetching judge analysis:', error);
-    return null;
-  }
+  return retryWithBackoff(() => makeAPICall(`/api/cases/${caseId}/judge-trends`, session));
 };
 
 export const fetchSettlementAnalysis = async (caseId: string, session: any) => {
-  try {
-    return await makeAPICall(`/api/cases/${caseId}/settlement-analysis`, session);
-  } catch (error) {
-    console.warn('Error fetching settlement analysis:', error);
-    return null;
-  }
+  return retryWithBackoff(() => makeAPICall(`/api/cases/${caseId}/settlement-analysis`, session));
 };
 
 export const fetchFinancialPrediction = async (caseId: string, session: any) => {
-  try {
-    return await makeAPICall(`/api/cases/${caseId}/financial-prediction`, session);
-  } catch (error) {
-    console.warn('Error fetching financial prediction:', error);
-    return null;
-  }
+  return retryWithBackoff(() => makeAPICall(`/api/cases/${caseId}/financial-prediction`, session));
 };
 
 export const fetchTimelineEstimate = async (caseId: string, session: any) => {
-  try {
-    return await makeAPICall(`/api/cases/${caseId}/timeline-estimate`, session);
-  } catch (error) {
-    console.warn('Error fetching timeline estimate:', error);
-    return null;
-  }
+  return retryWithBackoff(() => makeAPICall(`/api/cases/${caseId}/timeline-estimate`, session));
 };
 
 export const fetchCostEstimate = async (caseId: string, session: any) => {
-  try {
-    return await makeAPICall(`/api/cases/${caseId}/cost-estimate`, session);
-  } catch (error) {
-    console.warn('Error fetching cost estimate:', error);
-    return null;
-  }
+  return retryWithBackoff(() => makeAPICall(`/api/cases/${caseId}/cost-estimate`, session));
 };
 
 // Comprehensive case analysis fetch

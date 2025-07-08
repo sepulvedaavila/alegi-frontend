@@ -1,5 +1,16 @@
 import { useState, useEffect } from 'react';
 import { useQuery, UseQueryOptions } from '@tanstack/react-query';
+import { useAuth } from '@/contexts/AuthContext';
+import { 
+  fetchCaseProbabilityAnalysis,
+  fetchSettlementAnalysis,
+  fetchCasePrecedents,
+  fetchJudgeAnalysis,
+  fetchCaseRiskAssessment,
+  fetchCostEstimate,
+  fetchFinancialPrediction,
+  fetchTimelineEstimate
+} from '@/services/caseAnalysisService';
 
 // Smart polling hook for real-time updates
 export const useSmartPolling = <TData>(
@@ -60,144 +71,176 @@ export const useSmartPolling = <TData>(
 
 // Widget-specific polling hooks
 export const useCaseProbability = (caseId: string) => {
+  const { session } = useAuth();
+  
   return useSmartPolling(
     ['case-probability', caseId],
     async () => {
-      // TODO: Replace with actual API call
-      const response = await fetch(`/api/cases/${caseId}/probability`);
-      if (!response.ok) {
+      if (!session) {
+        throw new Error('No session available');
+      }
+      const result = await fetchCaseProbabilityAnalysis(caseId, session);
+      if (!result) {
         throw new Error('Failed to fetch case probability');
       }
-      return response.json();
+      return result;
     },
     {
-      enabled: !!caseId,
+      enabled: !!caseId && !!session,
       staleTime: 30000, // Consider data fresh for 30 seconds
     }
   );
 };
 
 export const useSettlementAnalysis = (caseId: string) => {
+  const { session } = useAuth();
+  
   return useSmartPolling(
     ['settlement-analysis', caseId],
     async () => {
-      // TODO: Replace with actual API call
-      const response = await fetch(`/api/cases/${caseId}/settlement-analysis`);
-      if (!response.ok) {
+      if (!session) {
+        throw new Error('No session available');
+      }
+      const result = await fetchSettlementAnalysis(caseId, session);
+      if (!result) {
         throw new Error('Failed to fetch settlement analysis');
       }
-      return response.json();
+      return result;
     },
     {
-      enabled: !!caseId,
+      enabled: !!caseId && !!session,
       staleTime: 60000, // Consider data fresh for 1 minute
     }
   );
 };
 
 export const usePrecedentAnalysis = (caseId: string, page: number = 1) => {
+  const { session } = useAuth();
+  
   return useSmartPolling(
     ['precedents', caseId, page.toString()],
     async () => {
-      // TODO: Replace with actual API call
-      const response = await fetch(`/api/cases/${caseId}/precedents?page=${page}&limit=10`);
-      if (!response.ok) {
+      if (!session) {
+        throw new Error('No session available');
+      }
+      const result = await fetchCasePrecedents(caseId, session);
+      if (!result) {
         throw new Error('Failed to fetch precedents');
       }
-      return response.json();
+      return result;
     },
     {
-      enabled: !!caseId,
+      enabled: !!caseId && !!session,
       staleTime: 300000, // Consider data fresh for 5 minutes
     }
   );
 };
 
 export const useJudgeTrends = (caseId: string) => {
+  const { session } = useAuth();
+  
   return useSmartPolling(
     ['judge-trends', caseId],
     async () => {
-      // TODO: Replace with actual API call
-      const response = await fetch(`/api/cases/${caseId}/judge-trends`);
-      if (!response.ok) {
+      if (!session) {
+        throw new Error('No session available');
+      }
+      const result = await fetchJudgeAnalysis(caseId, session);
+      if (!result) {
         throw new Error('Failed to fetch judge trends');
       }
-      return response.json();
+      return result;
     },
     {
-      enabled: !!caseId,
+      enabled: !!caseId && !!session,
       staleTime: 600000, // Consider data fresh for 10 minutes
     }
   );
 };
 
 export const useRiskAssessment = (caseId: string) => {
+  const { session } = useAuth();
+  
   return useSmartPolling(
     ['risk-assessment', caseId],
     async () => {
-      // TODO: Replace with actual API call
-      const response = await fetch(`/api/cases/${caseId}/risk-assessment`);
-      if (!response.ok) {
+      if (!session) {
+        throw new Error('No session available');
+      }
+      const result = await fetchCaseRiskAssessment(caseId, session);
+      if (!result) {
         throw new Error('Failed to fetch risk assessment');
       }
-      return response.json();
+      return result;
     },
     {
-      enabled: !!caseId,
+      enabled: !!caseId && !!session,
       staleTime: 300000, // Consider data fresh for 5 minutes
     }
   );
 };
 
 export const useCostEstimate = (caseId: string, strategy: string = 'standard') => {
+  const { session } = useAuth();
+  
   return useSmartPolling(
     ['cost-estimate', caseId, strategy],
     async () => {
-      // TODO: Replace with actual API call
-      const response = await fetch(`/api/cases/${caseId}/cost-estimate?strategy=${strategy}`);
-      if (!response.ok) {
+      if (!session) {
+        throw new Error('No session available');
+      }
+      const result = await fetchCostEstimate(caseId, session);
+      if (!result) {
         throw new Error('Failed to fetch cost estimate');
       }
-      return response.json();
+      return result;
     },
     {
-      enabled: !!caseId,
+      enabled: !!caseId && !!session,
       staleTime: 600000, // Consider data fresh for 10 minutes
     }
   );
 };
 
 export const useFinancialPrediction = (caseId: string) => {
+  const { session } = useAuth();
+  
   return useSmartPolling(
     ['financial-prediction', caseId],
     async () => {
-      // TODO: Replace with actual API call
-      const response = await fetch(`/api/cases/${caseId}/financial-prediction`);
-      if (!response.ok) {
+      if (!session) {
+        throw new Error('No session available');
+      }
+      const result = await fetchFinancialPrediction(caseId, session);
+      if (!result) {
         throw new Error('Failed to fetch financial prediction');
       }
-      return response.json();
+      return result;
     },
     {
-      enabled: !!caseId,
+      enabled: !!caseId && !!session,
       staleTime: 300000, // Consider data fresh for 5 minutes
     }
   );
 };
 
 export const useResolutionTimeline = (caseId: string) => {
+  const { session } = useAuth();
+  
   return useSmartPolling(
     ['resolution-timeline', caseId],
     async () => {
-      // TODO: Replace with actual API call
-      const response = await fetch(`/api/cases/${caseId}/timeline`);
-      if (!response.ok) {
+      if (!session) {
+        throw new Error('No session available');
+      }
+      const result = await fetchTimelineEstimate(caseId, session);
+      if (!result) {
         throw new Error('Failed to fetch resolution timeline');
       }
-      return response.json();
+      return result;
     },
     {
-      enabled: !!caseId,
+      enabled: !!caseId && !!session,
       staleTime: 600000, // Consider data fresh for 10 minutes
     }
   );
