@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { fetchCompleteAnalysis } from '@/services/caseAnalysisService';
 import { fetchComprehensiveCaseData } from '@/services/supabaseCaseDataService';
@@ -160,11 +160,20 @@ export const useCaseAnalysis = (caseId: string | undefined) => {
     return 'pending';
   }, [data, hasAnyData, isAnalysisComplete]);
 
-  return {
+  // Memoize the return value to prevent unnecessary re-renders
+  const memoizedReturn = useMemo(() => ({
     ...data,
     refreshAnalysis,
     hasAnyData: hasAnyData(),
     isAnalysisComplete: isAnalysisComplete(),
     analysisStatus: getAnalysisStatus()
-  };
+  }), [
+    data,
+    refreshAnalysis,
+    hasAnyData,
+    isAnalysisComplete,
+    getAnalysisStatus
+  ]);
+
+  return memoizedReturn;
 }; 

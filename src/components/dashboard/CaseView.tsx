@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useDashboard } from '@/contexts/DashboardContext';
 import { fetchCompleteCase } from '@/utils/case/caseFetching';
-import { useState, useEffect, useMemo, Component, ReactNode } from 'react';
+import { useState, useEffect, useMemo, useCallback, Component, ReactNode } from 'react';
 import { CompleteCase } from '@/utils/case/types';
 import { useCaseAnalysis } from '@/hooks/useCaseAnalysis';
 import AnalysisStatusIndicator from '@/components/dashboard/AnalysisStatusIndicator';
@@ -374,6 +374,102 @@ const CaseView = () => {
     );
   }
 
+  // Memoize the calculation functions to prevent recreation
+  const getStableConfidence = useCallback((safeAnalysisData: any, caseDetails: any) => {
+    // First priority: Use actual analysis data
+    if (safeAnalysisData.predictions?.confidence_prediction_percentage) {
+      return safeAnalysisData.predictions.confidence_prediction_percentage;
+    }
+    
+    // Second priority: Use probability confidence levels
+    if (safeAnalysisData.probability?.confidence) {
+      switch (safeAnalysisData.probability.confidence) {
+        case 'high': return 90;
+        case 'medium': return 70;
+        case 'low': return 50;
+        default: break;
+      }
+    }
+    
+    // Third priority: Calculate based on case stage and type
+    let baseConfidence = 65; // Default base confidence
+    
+    // Adjust based on case stage
+    switch (caseDetails.case_stage) {
+      case 'Settled':
+      case 'Closed':
+        baseConfidence = 85;
+        break;
+      case 'Trial':
+        baseConfidence = 75;
+        break;
+      case 'Discovery':
+        baseConfidence = 70;
+        break;
+      case 'Filed':
+        baseConfidence = 60;
+        break;
+      default:
+        baseConfidence = 65;
+    }
+    
+    // Adjust based on case type
+    switch (caseDetails.case_type) {
+      case 'Contract Dispute':
+        baseConfidence += 10;
+        break;
+      case 'Employment':
+        baseConfidence += 5;
+        break;
+      case 'Medical Malpractice':
+      case 'Product Liability':
+        baseConfidence -= 10;
+        break;
+      case 'Personal Injury':
+        baseConfidence -= 5;
+        break;
+    }
+    
+    // Ensure confidence is within reasonable bounds
+    return Math.max(30, Math.min(95, baseConfidence));
+  }, []);
+
+  const getStablePotentialValue = useCallback((safeAnalysisData: any, caseDetails: any) => {
+    if (safeAnalysisData.predictions?.estimated_financial_outcome) {
+      return safeAnalysisData.predictions.estimated_financial_outcome;
+    }
+    if (safeAnalysisData.financialPrediction?.estimatedValue) {
+      return safeAnalysisData.financialPrediction.estimatedValue;
+    }
+    
+    // Base value on case type
+    const baseValues = {
+      'Contract Dispute': 150000,
+      'Employment': 100000,
+      'Personal Injury': 200000,
+      'Medical Malpractice': 500000,
+      'Product Liability': 300000,
+      'Property Dispute': 75000
+    };
+    
+    return baseValues[caseDetails.case_type as keyof typeof baseValues] || 125000;
+  }, []);
+
+  const getStableDaysActive = useCallback((safeAnalysisData: any, caseDetails: any) => {
+    if (safeAnalysisData.timelineEstimate?.estimatedDays) {
+      return safeAnalysisData.timelineEstimate.estimatedDays;
+    }
+    
+    try {
+      const createdDate = new Date(caseDetails.created_at);
+      const currentDate = new Date();
+      return Math.floor((currentDate.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24));
+    } catch (error) {
+      console.error('Error calculating days active:', error);
+      return 0;
+    }
+  }, []);
+
   // Transform the complete case data to match the expected format
   // Use useMemo to prevent recreation on every render
   const transformedCase = useMemo(() => {
@@ -400,104 +496,6 @@ const CaseView = () => {
       timelineEstimate: analysisData?.timelineEstimate || null
     };
 
-    // Calculate a stable confidence score based on case data and analysis
-    const getStableConfidence = () => {
-      // First priority: Use actual analysis data
-      if (safeAnalysisData.predictions?.confidence_prediction_percentage) {
-        return safeAnalysisData.predictions.confidence_prediction_percentage;
-      }
-      
-      // Second priority: Use probability confidence levels
-      if (safeAnalysisData.probability?.confidence) {
-        switch (safeAnalysisData.probability.confidence) {
-          case 'high': return 90;
-          case 'medium': return 70;
-          case 'low': return 50;
-          default: break;
-        }
-      }
-      
-      // Third priority: Calculate based on case stage and type
-      let baseConfidence = 65; // Default base confidence
-      
-      // Adjust based on case stage
-      switch (caseData.caseDetails.case_stage) {
-        case 'Settled':
-        case 'Closed':
-          baseConfidence = 85;
-          break;
-        case 'Trial':
-          baseConfidence = 75;
-          break;
-        case 'Discovery':
-          baseConfidence = 70;
-          break;
-        case 'Filed':
-          baseConfidence = 60;
-          break;
-        default:
-          baseConfidence = 65;
-      }
-      
-      // Adjust based on case type
-      switch (caseData.caseDetails.case_type) {
-        case 'Contract Dispute':
-          baseConfidence += 10;
-          break;
-        case 'Employment':
-          baseConfidence += 5;
-          break;
-        case 'Medical Malpractice':
-        case 'Product Liability':
-          baseConfidence -= 10;
-          break;
-        case 'Personal Injury':
-          baseConfidence -= 5;
-          break;
-      }
-      
-      // Ensure confidence is within reasonable bounds
-      return Math.max(30, Math.min(95, baseConfidence));
-    };
-
-    // Calculate stable potential value
-    const getStablePotentialValue = () => {
-      if (safeAnalysisData.predictions?.estimated_financial_outcome) {
-        return safeAnalysisData.predictions.estimated_financial_outcome;
-      }
-      if (safeAnalysisData.financialPrediction?.estimatedValue) {
-        return safeAnalysisData.financialPrediction.estimatedValue;
-      }
-      
-      // Base value on case type
-      const baseValues = {
-        'Contract Dispute': 150000,
-        'Employment': 100000,
-        'Personal Injury': 200000,
-        'Medical Malpractice': 500000,
-        'Product Liability': 300000,
-        'Property Dispute': 75000
-      };
-      
-      return baseValues[caseData.caseDetails.case_type as keyof typeof baseValues] || 125000;
-    };
-
-    // Calculate stable days active
-    const getStableDaysActive = () => {
-      if (safeAnalysisData.timelineEstimate?.estimatedDays) {
-        return safeAnalysisData.timelineEstimate.estimatedDays;
-      }
-      
-      try {
-        const createdDate = new Date(caseData.caseDetails.created_at);
-        const currentDate = new Date();
-        return Math.floor((currentDate.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24));
-      } catch (error) {
-        console.error('Error calculating days active:', error);
-        return 0;
-      }
-    };
-
     return {
       id: caseData.caseDetails.id,
       title: caseData.caseDetails.case_name || `Case ${caseData.caseDetails.case_number || caseData.caseDetails.id}`,
@@ -506,7 +504,7 @@ const CaseView = () => {
         : caseData.caseDetails.case_stage === 'Filed' || caseData.caseDetails.case_stage === 'Discovery' || caseData.caseDetails.case_stage === 'Trial'
         ? 'Active' as const
         : 'Pending' as const,
-      confidence: getStableConfidence(),
+      confidence: getStableConfidence(safeAnalysisData, caseData.caseDetails),
       date: caseData.caseDetails.date_filed || caseData.caseDetails.created_at.split('T')[0],
       risk: safeAnalysisData.predictions?.risk_level || 
             safeAnalysisData.riskAssessment?.overallRisk ||
@@ -515,8 +513,8 @@ const CaseView = () => {
             : (caseData.caseDetails.case_type === 'Contract Dispute' || caseData.caseDetails.case_type === 'Employment')
             ? 'Low' as const
             : 'Medium' as const,
-      potentialValue: getStablePotentialValue(),
-      daysActive: getStableDaysActive()
+      potentialValue: getStablePotentialValue(safeAnalysisData, caseData.caseDetails),
+      daysActive: getStableDaysActive(safeAnalysisData, caseData.caseDetails)
     };
   }, [
     caseData?.caseDetails?.id,
@@ -526,11 +524,17 @@ const CaseView = () => {
     caseData?.caseDetails?.case_type,
     caseData?.caseDetails?.date_filed,
     caseData?.caseDetails?.created_at,
-    analysisData?.predictions,
-    analysisData?.probability,
-    analysisData?.riskAssessment,
-    analysisData?.financialPrediction,
-    analysisData?.timelineEstimate,
+    // Only include primitive values from analysisData to avoid object recreation issues
+    analysisData?.predictions?.confidence_prediction_percentage,
+    analysisData?.predictions?.estimated_financial_outcome,
+    analysisData?.predictions?.risk_level,
+    analysisData?.probability?.confidence,
+    analysisData?.riskAssessment?.overallRisk,
+    analysisData?.financialPrediction?.estimatedValue,
+    analysisData?.timelineEstimate?.estimatedDays,
+    getStableConfidence,
+    getStablePotentialValue,
+    getStableDaysActive,
     caseId
   ]);
 
