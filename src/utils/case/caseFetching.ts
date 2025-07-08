@@ -14,7 +14,7 @@ export const fetchCompleteCase = async (caseId: string): Promise<CompleteCase | 
       .from('case_briefs')
       .select('*')
       .eq('id', caseId)
-      .single();
+      .maybeSingle();
     
     if (caseError || !caseData) {
       console.error('Error fetching case:', caseError);

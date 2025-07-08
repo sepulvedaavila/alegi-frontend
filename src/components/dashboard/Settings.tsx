@@ -39,7 +39,7 @@ const Settings = () => {
           .from('profiles')
           .select('*')
           .eq('id', user.id)
-          .single();
+          .maybemaybeSingle();
 
         if (error) {
           console.error('Error fetching profile:', error);
@@ -116,7 +116,7 @@ const Settings = () => {
         .from('profiles')
         .select('*')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
 
       if (updatedProfile) {
         setProfile(updatedProfile);

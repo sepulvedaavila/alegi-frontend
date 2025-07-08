@@ -7,7 +7,7 @@ export const fetchCasePredictions = async (caseId: string) => {
       .from('case_predictions')
       .select('*')
       .eq('case_id', caseId)
-      .single();
+      .maybeSingle();
 
     if (error) {
       // Check for specific error codes
@@ -41,7 +41,7 @@ export const fetchCaseAIEnrichment = async (caseId: string) => {
       .from('case_ai_enrichment')
       .select('*')
       .eq('case_id', caseId)
-      .single();
+      .maybeSingle();
 
     if (error) {
       // Log the specific error for debugging

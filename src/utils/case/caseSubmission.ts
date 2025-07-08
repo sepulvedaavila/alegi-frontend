@@ -49,7 +49,7 @@ export const submitCaseToSupabase = async (data: CaseFormValues): Promise<Submit
         additional_notes: data.additional_notes || null
       })
       .select('id')
-      .single();
+      .maybeSingle();
 
     if (caseError) {
       console.error('Error creating case:', caseError);
