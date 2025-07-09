@@ -24,6 +24,10 @@ import AIStrategyRecommendationsWidget from '@/components/dashboard/widgets/AISt
 import FactStrengthAnalysisWidget from '@/components/dashboard/widgets/FactStrengthAnalysisWidget';
 import AverageTimeResolutionWidget from '@/components/dashboard/widgets/AverageTimeResolutionWidget';
 
+// Import new enhanced components
+import CaseProcessingStatus from '@/components/cases/CaseProcessingStatus';
+import EnhancedCaseData from '@/components/cases/EnhancedCaseData';
+
 const CaseViewNew = () => {
   const { caseId } = useParams<{ caseId: string }>();
   const navigate = useNavigate();
@@ -196,12 +200,20 @@ const CaseViewNew = () => {
 
           {/* Main Content */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="enhanced">Enhanced Analysis</TabsTrigger>
               <TabsTrigger value="details">Case Details</TabsTrigger>
               <TabsTrigger value="documents">Documents</TabsTrigger>
               <TabsTrigger value="analysis">AI Analysis</TabsTrigger>
             </TabsList>
+
+            {/* Processing Status Banner */}
+            {status.processingStatus === 'processing' && (
+              <div className="mb-6">
+                <CaseProcessingStatus caseId={caseId!} />
+              </div>
+            )}
 
             {/* Overview Tab */}
             <TabsContent value="overview" className="space-y-6">
@@ -350,6 +362,11 @@ const CaseViewNew = () => {
               </Card>
             </TabsContent>
 
+            {/* Enhanced Analysis Tab */}
+            <TabsContent value="enhanced" className="space-y-6">
+              <EnhancedCaseData caseId={caseId!} />
+            </TabsContent>
+
             {/* Details Tab */}
             <TabsContent value="details" className="space-y-6">
               <Card>
@@ -473,42 +490,13 @@ const CaseViewNew = () => {
             <TabsContent value="analysis" className="space-y-6">
               {status.hasAiData ? (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {aiData.predictions && (
-                    <>
-                      <PredictedOutcomeWidget 
-                        probability={{
-                          successProbability: aiData.predictions.success_probability,
-                          confidenceLevel: aiData.predictions.confidence_level
-                        }}
-                      />
-                      <CaseComplexityRiskWidget 
-                        riskAssessment={{
-                          riskLevel: aiData.predictions.risk_level || 'medium',
-                          caseComplexity: aiData.predictions.case_complexity || 'moderate'
-                        }}
-                      />
-                    </>
-                  )}
-                  
-                  {aiData.analysis.risk_assessment && (
-                    <RiskAssessmentWidget riskAssessment={aiData.analysis.risk_assessment} />
-                  )}
-                  
-                  {aiData.analysis.precedent_analysis && (
-                    <PrecedentAnalysisWidget precedents={aiData.analysis.precedent_analysis} />
-                  )}
-                  
-                  {aiData.analysis.judge_analysis && (
-                    <JudgeAnalysisWidget judgeAnalysis={aiData.analysis.judge_analysis} />
-                  )}
-                  
-                  {aiData.analysis.settlement_analysis && (
-                    <SettlementVsTrialAnalysisWidget settlementAnalysis={aiData.analysis.settlement_analysis} />
-                  )}
-                  
-                  {aiData.analysis.timeline_estimate && (
-                    <AverageTimeResolutionWidget timelineEstimate={aiData.analysis.timeline_estimate} />
-                  )}
+                  <PredictedOutcomeWidget caseId={caseId} />
+                  <CaseComplexityRiskWidget caseId={caseId} />
+                  <RiskAssessmentWidget caseId={caseId} />
+                  <PrecedentAnalysisWidget caseId={caseId} />
+                  <JudgeAnalysisWidget caseId={caseId} />
+                  <SettlementVsTrialAnalysisWidget caseId={caseId} />
+                  <AverageTimeResolutionWidget caseData={caseData} />
                 </div>
               ) : (
                 <Card>

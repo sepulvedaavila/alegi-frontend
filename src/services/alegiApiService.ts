@@ -116,6 +116,16 @@ export const getEnhancedCaseStatus = async (caseId: string, session: any) => {
   return retryWithBackoff(() => makeAuthenticatedAPICall(`/api/cases/${caseId}/enhanced-status`, session));
 };
 
+// New endpoint for processing status
+export const getCaseProcessingStatus = async (caseId: string, session: any) => {
+  return retryWithBackoff(() => makeAuthenticatedAPICall(`/api/cases/${caseId}/processing-status`, session));
+};
+
+// New endpoint for enhanced data
+export const getEnhancedCaseData = async (caseId: string, session: any) => {
+  return retryWithBackoff(() => makeAuthenticatedAPICall(`/api/cases/${caseId}/enhanced-data`, session));
+};
+
 export const getCaseUpdates = async (caseId: string, lastUpdate: string, session: any) => {
   return retryWithBackoff(() => makeAuthenticatedAPICall(`/api/cases/${caseId}/updates?lastUpdate=${lastUpdate}`, session));
 };
