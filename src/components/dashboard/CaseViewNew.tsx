@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, FileText, Calendar, User, Building, AlertTriangle, CheckCircle, Clock, DollarSign, TrendingUp, BarChart3, Copy, RefreshCw, Play, Loader2 } from 'lucide-react';
+import { ArrowLeft, FileText, Calendar, User, Building, AlertTriangle, CheckCircle, Clock, DollarSign, TrendingUp, BarChart3, Copy, RefreshCw, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -8,9 +8,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useDashboard } from '@/contexts/DashboardContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import { useCaseViewData } from '@/hooks/useCaseViewData';
-import { triggerCaseAnalysis } from '@/services/alegiApiService';
 
 // Import case insights widgets
 import PredictedOutcomeWidget from '@/components/dashboard/widgets/PredictedOutcomeWidget';
@@ -34,29 +33,10 @@ const CaseViewNew = () => {
   const { toggleFavorite, isFavorite } = useDashboard();
   const { session } = useAuth();
   const [copyFeedback, setCopyFeedback] = useState(false);
-  const [isManuallyTriggering, setIsManuallyTriggering] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
 
   // Use the new hook for fetching case data
   const { data: caseViewData, isLoading, error, refetch } = useCaseViewData(caseId);
-
-  // Handle manual trigger for analysis
-  const handleTriggerAnalysis = useCallback(async () => {
-    if (!caseId || !session || isManuallyTriggering) return;
-    
-    setIsManuallyTriggering(true);
-    try {
-      await triggerCaseAnalysis(caseId, session);
-      // Wait a bit then refetch
-      setTimeout(() => {
-        refetch();
-      }, 3000);
-    } catch (error) {
-      console.error('Failed to trigger analysis:', error);
-    } finally {
-      setIsManuallyTriggering(false);
-    }
-  }, [caseId, session, refetch, isManuallyTriggering]);
 
   // Handle copy case ID
   const handleCopyCaseId = () => {
@@ -200,12 +180,11 @@ const CaseViewNew = () => {
 
           {/* Main Content */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="enhanced">Enhanced Analysis</TabsTrigger>
               <TabsTrigger value="details">Case Details</TabsTrigger>
               <TabsTrigger value="documents">Documents</TabsTrigger>
-              <TabsTrigger value="analysis">AI Analysis</TabsTrigger>
             </TabsList>
 
             {/* Processing Status Banner */}
@@ -253,6 +232,78 @@ const CaseViewNew = () => {
                   </CardContent>
                 </Card>
               </div>
+
+              {/* AI Analysis Status */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>AI Analysis Status</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium">Processing Status</p>
+                        <p className="text-sm text-gray-600">
+                          {status.processingStatus === 'processing' ? 'Analysis in progress...' :
+                           status.processingStatus === 'completed' ? 'Analysis complete' :
+                           status.processingStatus === 'failed' ? 'Analysis failed' :
+                           'Not started'}
+                        </p>
+                      </div>
+                      {status.processingStatus === 'processing' ? (
+                        <Loader2 className="h-5 w-5 animate-spin text-blue-500" />
+                      ) : status.hasAiData ? (
+                        <CheckCircle className="h-5 w-5 text-green-500" />
+                      ) : (
+                        <AlertTriangle className="h-5 w-5 text-yellow-500" />
+                      )}
+                    </div>
+                    
+                    {status.lastAiUpdate && (
+                      <p className="text-sm text-gray-600">
+                        Last updated: {new Date(status.lastAiUpdate).toLocaleString()}
+                      </p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* AI Analysis Widgets */}
+              {status.hasAiData ? (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <PredictedOutcomeWidget caseId={caseId} />
+                  <CaseComplexityRiskWidget caseId={caseId} />
+                  <RiskAssessmentWidget caseId={caseId} />
+                  <PrecedentAnalysisWidget caseId={caseId} />
+                  <JudgeAnalysisWidget caseId={caseId} />
+                  <SettlementVsTrialAnalysisWidget caseId={caseId} />
+                  <AverageTimeResolutionWidget caseData={caseData} />
+                </div>
+              ) : status.processingStatus === 'processing' ? (
+                <Card>
+                  <CardContent className="text-center py-12">
+                    <Loader2 className="h-12 w-12 text-blue-500 mx-auto mb-4 animate-spin" />
+                    <h3 className="text-lg font-semibold mb-2">AI Analysis in Progress</h3>
+                    <p className="text-gray-600 mb-6">
+                      Your case is being analyzed by our AI system. This typically takes 3-7 minutes to complete.
+                    </p>
+                    <div className="flex items-center justify-center space-x-2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+                      <span className="text-sm text-gray-500">Processing...</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : (
+                <Card>
+                  <CardContent className="text-center py-12">
+                    <AlertTriangle className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">AI Analysis Pending</h3>
+                    <p className="text-gray-600 mb-6">
+                      AI analysis will be automatically triggered for your case. Please check back in a few minutes.
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Parties */}
               <Card>
@@ -303,61 +354,6 @@ const CaseViewNew = () => {
                       </div>
                     </div>
                   )}
-                </CardContent>
-              </Card>
-
-              {/* AI Analysis Status */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>AI Analysis Status</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium">Processing Status</p>
-                        <p className="text-sm text-gray-600">
-                          {status.processingStatus === 'processing' ? 'Analysis in progress...' :
-                           status.processingStatus === 'completed' ? 'Analysis complete' :
-                           status.processingStatus === 'failed' ? 'Analysis failed' :
-                           'Not started'}
-                        </p>
-                      </div>
-                      {status.processingStatus === 'processing' ? (
-                        <Loader2 className="h-5 w-5 animate-spin text-blue-500" />
-                      ) : status.hasAiData ? (
-                        <CheckCircle className="h-5 w-5 text-green-500" />
-                      ) : (
-                        <AlertTriangle className="h-5 w-5 text-yellow-500" />
-                      )}
-                    </div>
-                    
-                    {!status.hasAiData && status.processingStatus !== 'processing' && (
-                      <Button 
-                        onClick={handleTriggerAnalysis}
-                        disabled={isManuallyTriggering}
-                        className="w-full"
-                      >
-                        {isManuallyTriggering ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Triggering Analysis...
-                          </>
-                        ) : (
-                          <>
-                            <Play className="mr-2 h-4 w-4" />
-                            Start AI Analysis
-                          </>
-                        )}
-                      </Button>
-                    )}
-                    
-                    {status.lastAiUpdate && (
-                      <p className="text-sm text-gray-600">
-                        Last updated: {new Date(status.lastAiUpdate).toLocaleString()}
-                      </p>
-                    )}
-                  </div>
                 </CardContent>
               </Card>
             </TabsContent>
@@ -481,48 +477,6 @@ const CaseViewNew = () => {
                         </div>
                       ))}
                     </div>
-                  </CardContent>
-                </Card>
-              )}
-            </TabsContent>
-
-            {/* Analysis Tab */}
-            <TabsContent value="analysis" className="space-y-6">
-              {status.hasAiData ? (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <PredictedOutcomeWidget caseId={caseId} />
-                  <CaseComplexityRiskWidget caseId={caseId} />
-                  <RiskAssessmentWidget caseId={caseId} />
-                  <PrecedentAnalysisWidget caseId={caseId} />
-                  <JudgeAnalysisWidget caseId={caseId} />
-                  <SettlementVsTrialAnalysisWidget caseId={caseId} />
-                  <AverageTimeResolutionWidget caseData={caseData} />
-                </div>
-              ) : (
-                <Card>
-                  <CardContent className="text-center py-12">
-                    <AlertTriangle className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">No AI Analysis Available</h3>
-                    <p className="text-gray-600 mb-6">
-                      {status.processingStatus === 'processing' 
-                        ? 'Analysis is currently in progress. Please check back in a few minutes.'
-                        : 'AI analysis has not been performed for this case yet.'}
-                    </p>
-                    {status.processingStatus !== 'processing' && (
-                      <Button onClick={handleTriggerAnalysis} disabled={isManuallyTriggering}>
-                        {isManuallyTriggering ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Triggering Analysis...
-                          </>
-                        ) : (
-                          <>
-                            <Play className="mr-2 h-4 w-4" />
-                            Start AI Analysis
-                          </>
-                        )}
-                      </Button>
-                    )}
                   </CardContent>
                 </Card>
               )}
