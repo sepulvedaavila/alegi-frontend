@@ -1,9 +1,7 @@
 import { useCallback, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+// Backend API imports removed - only Supabase communication
 import { 
-  submitCaseIntake,
-  uploadCaseDocument,
-  triggerCaseAnalysis,
   getCaseStatus,
   getEnhancedCaseStatus,
   getCaseUpdates,
@@ -34,20 +32,20 @@ export const useAlegiApi = () => {
   // Check if user is authenticated
   const isAuthenticated = useMemo(() => !!session, [session]);
 
-  // Case Management
+  // Case Management - Backend API functions removed
   const submitCase = useCallback(async (caseData: any) => {
     if (!session) throw new Error('Not authenticated');
-    return submitCaseIntake(caseData, session);
+    throw new Error('Case submission to backend API is disabled - use Supabase only');
   }, [session]);
 
   const uploadDocument = useCallback(async (caseId: string, file: File) => {
     if (!session) throw new Error('Not authenticated');
-    return uploadCaseDocument(caseId, file, session);
+    throw new Error('Document upload to backend API is disabled - use Supabase only');
   }, [session]);
 
   const triggerAnalysis = useCallback(async (caseId: string) => {
     if (!session) throw new Error('Not authenticated');
-    return triggerCaseAnalysis(caseId, session);
+    throw new Error('Analysis triggering to backend API is disabled - use Supabase only');
   }, [session]);
 
   // Status and Updates

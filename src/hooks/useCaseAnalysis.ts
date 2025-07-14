@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { fetchCompleteAnalysis } from '@/services/caseAnalysisService';
 import { fetchComprehensiveCaseData } from '@/services/supabaseCaseDataService';
-import { getCaseStatus, triggerCaseAnalysis, triggerEnhancedProcessing } from '@/services/alegiApiService';
+// Removed backend API imports - analysis triggering disabled
 
 export interface CaseAnalysisData {
   // API Analysis Results
@@ -57,8 +57,9 @@ export const useCaseAnalysis = (caseId: string | undefined) => {
     }
 
     try {
-      const status = await getCaseStatus(caseId, session);
-      return status;
+      // Status checking disabled - backend API removed
+      console.warn('Case status checking disabled - backend API removed');
+      return null;
     } catch (error) {
       console.warn('Error checking case status:', error);
       return null;
@@ -70,13 +71,13 @@ export const useCaseAnalysis = (caseId: string | undefined) => {
       return;
     }
 
-    // Check if case needs initial processing through linear pipeline
+    // Analysis triggering disabled - backend API removed
     if (!status.ai_processed && status.processing_status !== 'processing' && status.processing_status !== 'completed') {
       try {
-        console.log('Triggering linear pipeline analysis for case:', caseId);
-        await triggerCaseAnalysis(caseId, session);
+        console.log('Analysis triggering disabled - backend API removed');
+        // Analysis triggering is disabled - only Supabase communication
       } catch (error) {
-        console.warn('Error triggering linear pipeline analysis:', error);
+        console.warn('Error triggering analysis:', error);
       }
     }
   }, [caseId, session]);
@@ -190,7 +191,8 @@ export const useCaseAnalysis = (caseId: string | undefined) => {
     }
 
     try {
-      await triggerEnhancedProcessing(caseId, session);
+      // Enhanced analysis triggering disabled - backend API removed
+      console.log('Enhanced analysis triggering disabled - backend API removed');
       // Refresh analysis data after triggering enhanced processing
       setTimeout(() => {
         fetchAnalysisData(true);
