@@ -1,20 +1,59 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { PlusCircle, TrendingUp, AlertTriangle, CheckCircle, Clock, DollarSign, FileText, Users, BarChart3, Calendar } from 'lucide-react';
+import { PlusCircle, TrendingUp, AlertTriangle, CheckCircle, Clock, DollarSign, FileText, Users, BarChart3, Calendar, Wifi, WifiOff, Brain } from 'lucide-react';
 import DashboardHeader from './header/DashboardHeader';
 import ExportMenu from './header/ExportMenu';
 import DashboardContent from './content/DashboardContent';
 import NewCaseModal from '@/components/cases/NewCaseModal';
 import { useDashboard } from '@/contexts/DashboardContext';
+import { useRealtimeCasesUpdates } from '@/hooks/useRealtimeCaseUpdates';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 
 const DashboardHome = () => {
-  const { recentCases, toggleFavorite, isFavorite, isLoadingCases } = useDashboard();
+  const { recentCases, toggleFavorite, isFavorite, isLoadingCases, refreshCases } = useDashboard();
+  const { user } = useAuth();
   const [isNewCaseModalOpen, setIsNewCaseModalOpen] = useState(false);
+  const [processingCases, setProcessingCases] = useState<Set<string>>(new Set());
   const dashboardRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+
+  // Get case IDs for real-time monitoring
+  const userCaseIds = recentCases.map(c => c.id);
+
+  // Set up real-time updates for user's cases
+  const { isConnected, lastUpdate } = useRealtimeCasesUpdates(userCaseIds, {
+    onUpdate: (update) => {
+      console.log('Dashboard received real-time update:', update);
+      
+      // Show toast notifications for important updates
+      if (update.processingStatus === 'completed') {
+        toast.success(`Case analysis completed: ${update.caseId.slice(0, 8)}...`);
+        setProcessingCases(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(update.caseId);
+          return newSet;
+        });
+        // Refresh cases to get updated data
+        refreshCases();
+      } else if (update.processingStatus === 'processing') {
+        setProcessingCases(prev => new Set(prev).add(update.caseId));
+      } else if (update.processingStatus === 'failed') {
+        toast.error(`Case analysis failed: ${update.caseId.slice(0, 8)}...`);
+        setProcessingCases(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(update.caseId);
+          return newSet;
+        });
+      }
+    },
+    onError: (error) => {
+      console.error('Dashboard real-time error:', error);
+    }
+  });
 
   // Open the new case modal
   const handleNewCase = () => {
@@ -31,6 +70,7 @@ const DashboardHome = () => {
   const activeCases = recentCases.filter(c => c.status === 'Active').length;
   const pendingCases = recentCases.filter(c => c.status === 'Pending').length;
   const closedCases = recentCases.filter(c => c.status === 'Closed').length;
+  const processingCount = processingCases.size;
   const averageConfidence = totalCases > 0 ? Math.round(recentCases.reduce((sum, c) => sum + c.confidence, 0) / totalCases) : 0;
   const highRiskCases = recentCases.filter(c => c.risk === 'High').length;
 
@@ -62,6 +102,24 @@ const DashboardHome = () => {
               onFavoriteToggle={() => {}} 
             />
             <div className="flex items-center gap-3">
+              {/* Real-time Status Indicator */}
+              <div className="flex items-center space-x-2 px-3 py-1 bg-white rounded-lg border">
+                {isConnected ? (
+                  <Wifi className="h-4 w-4 text-green-600" />
+                ) : (
+                  <WifiOff className="h-4 w-4 text-red-600" />
+                )}
+                <span className="text-xs text-gray-600">
+                  {isConnected ? 'Live Updates' : 'Offline'}
+                </span>
+                {processingCount > 0 && (
+                  <Badge variant="secondary" className="ml-2">
+                    <Brain className="h-3 w-3 mr-1" />
+                    {processingCount} processing
+                  </Badge>
+                )}
+              </div>
+              
               <Button
                 onClick={handleNewCase}
                 className="bg-alegi-blue hover:bg-blue-700 text-white"
@@ -121,11 +179,14 @@ const DashboardHome = () => {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">High Risk Cases</p>
-                    <p className="text-3xl font-bold text-red-600">{highRiskCases}</p>
+                    <p className="text-sm font-medium text-gray-600">Processing</p>
+                    <p className="text-3xl font-bold text-orange-600">{processingCount}</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {processingCount > 0 ? 'AI analysis in progress' : 'No active processing'}
+                    </p>
                   </div>
-                  <div className="p-3 bg-red-100 rounded-full">
-                    <AlertTriangle className="h-6 w-6 text-red-600" />
+                  <div className="p-3 bg-orange-100 rounded-full">
+                    <Brain className="h-6 w-6 text-orange-600" />
                   </div>
                 </div>
               </CardContent>
@@ -158,22 +219,34 @@ const DashboardHome = () => {
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      {recentCases.slice(0, 3).map((caseItem) => (
-                        <div 
-                          key={caseItem.id}
-                          className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
-                          onClick={() => handleCaseClick(caseItem.id)}
-                        >
-                          <div className="flex-1">
-                            <div className="flex items-center space-x-3">
-                              <div>
-                                <h4 className="font-medium text-gray-900">{caseItem.title}</h4>
-                                <p className="text-sm text-gray-500">ID: {caseItem.id}</p>
+                      {recentCases.slice(0, 3).map((caseItem) => {
+                        const isProcessing = processingCases.has(caseItem.id);
+                        return (
+                          <div 
+                            key={caseItem.id}
+                            className={`flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors ${
+                              isProcessing ? 'border-orange-200 bg-orange-50' : ''
+                            }`}
+                            onClick={() => handleCaseClick(caseItem.id)}
+                          >
+                            <div className="flex-1">
+                              <div className="flex items-center space-x-3">
+                                <div>
+                                  <div className="flex items-center space-x-2">
+                                    <h4 className="font-medium text-gray-900">{caseItem.title}</h4>
+                                    {isProcessing && (
+                                      <Badge variant="secondary" className="text-xs">
+                                        <Brain className="h-3 w-3 mr-1 animate-pulse" />
+                                        Processing
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  <p className="text-sm text-gray-500">ID: {caseItem.id.slice(0, 8)}...</p>
+                                </div>
                               </div>
-                            </div>
-                            <div className="flex items-center space-x-4 mt-2">
-                              <Badge className={getStatusColor(caseItem.status)}>
-                                {caseItem.status}
+                              <div className="flex items-center space-x-4 mt-2">
+                                <Badge className={getStatusColor(caseItem.status)}>
+                                  {caseItem.status}
                               </Badge>
                               <Badge className={getRiskColor(caseItem.risk)}>
                                 {caseItem.risk} Risk
@@ -200,7 +273,8 @@ const DashboardHome = () => {
                             </Button>
                           </div>
                         </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </CardContent>

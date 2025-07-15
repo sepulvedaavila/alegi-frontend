@@ -25,7 +25,17 @@ import AverageTimeResolutionWidget from '@/components/dashboard/widgets/AverageT
 
 // Import new enhanced components
 import CaseProcessingStatus from '@/components/cases/CaseProcessingStatus';
+import CaseProcessingStatusEnhanced from '@/components/cases/CaseProcessingStatusEnhanced';
 import EnhancedCaseData from '@/components/cases/EnhancedCaseData';
+
+// Import analysis components
+import { 
+  OutcomeProbabilityChart, 
+  SettlementAnalysisComponent, 
+  RiskAssessmentDashboard, 
+  PrecedentAnalysisView 
+} from '@/components/analysis';
+import { useCaseAnalysisData } from '@/hooks/useCaseAnalysisData';
 
 const CaseViewNew = () => {
   const { caseId } = useParams<{ caseId: string }>();
@@ -37,6 +47,14 @@ const CaseViewNew = () => {
 
   // Use the new hook for fetching case data
   const { data: caseViewData, isLoading, error, refetch } = useCaseViewData(caseId);
+  
+  // Use analysis data hook for enhanced components
+  const { 
+    data: analysisData, 
+    loading: analysisLoading, 
+    error: analysisError,
+    refetch: refetchAnalysis 
+  } = useCaseAnalysisData(caseId);
 
   // Handle copy case ID
   const handleCopyCaseId = () => {
@@ -188,9 +206,18 @@ const CaseViewNew = () => {
             </TabsList>
 
             {/* Processing Status Banner */}
-            {status.processingStatus === 'processing' && (
+            {(status.processingStatus === 'processing' || status.processingStatus === 'pending') && (
               <div className="mb-6">
-                <CaseProcessingStatus caseId={caseId!} />
+                <CaseProcessingStatusEnhanced 
+                  caseId={caseId!} 
+                  onStatusChange={(newStatus) => {
+                    // Refetch analysis data when processing completes
+                    if (newStatus === 'completed') {
+                      refetchAnalysis();
+                      refetch();
+                    }
+                  }}
+                />
               </div>
             )}
 
@@ -269,8 +296,73 @@ const CaseViewNew = () => {
               </Card>
 
               {/* AI Analysis Widgets */}
-              {status.hasAiData ? (
+              {(status.hasAiData || analysisData.probability || analysisData.risk) ? (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Quick Outcome Probability Summary */}
+                  {analysisData.probability && (
+                    <Card>
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-base flex items-center space-x-2">
+                          <TrendingUp className="h-4 w-4" />
+                          <span>Quick Outcome Analysis</span>
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-3">
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm">Success Likelihood</span>
+                            <span className="font-bold text-green-600">{analysisData.probability.successProbability}%</span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm">Settlement Probability</span>
+                            <span className="font-bold text-blue-600">{analysisData.probability.settlementProbability}%</span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm">Confidence Level</span>
+                            <Badge className={analysisData.probability.confidence === 'high' ? 'bg-green-100 text-green-800' : 
+                                           analysisData.probability.confidence === 'medium' ? 'bg-yellow-100 text-yellow-800' : 
+                                           'bg-red-100 text-red-800'}>
+                              {analysisData.probability.confidence.toUpperCase()}
+                            </Badge>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Quick Risk Summary */}
+                  {analysisData.risk && (
+                    <Card>
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-base flex items-center space-x-2">
+                          <AlertTriangle className="h-4 w-4" />
+                          <span>Risk Overview</span>
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-3">
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm">Risk Level</span>
+                            <Badge className={analysisData.risk.riskLevel === 'low' ? 'bg-green-100 text-green-800' : 
+                                           analysisData.risk.riskLevel === 'medium' ? 'bg-yellow-100 text-yellow-800' : 
+                                           'bg-red-100 text-red-800'}>
+                              {analysisData.risk.riskLevel.toUpperCase()}
+                            </Badge>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm">Risk Score</span>
+                            <span className="font-bold text-red-600">{analysisData.risk.riskScore}/100</span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm">Critical Issues</span>
+                            <span className="font-bold">{analysisData.risk.weaknesses.length}</span>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Legacy widgets for existing data */}
                   <PredictedOutcomeWidget caseId={caseId} />
                   <CaseComplexityRiskWidget caseId={caseId} />
                   <RiskAssessmentWidget caseId={caseId} />
@@ -360,7 +452,106 @@ const CaseViewNew = () => {
 
             {/* Enhanced Analysis Tab */}
             <TabsContent value="enhanced" className="space-y-6">
-              <EnhancedCaseData caseId={caseId!} />
+              {/* Analysis Loading State */}
+              {analysisLoading && (
+                <Card>
+                  <CardContent className="text-center py-12">
+                    <Loader2 className="h-12 w-12 text-blue-500 mx-auto mb-4 animate-spin" />
+                    <h3 className="text-lg font-semibold mb-2">Loading Analysis Data</h3>
+                    <p className="text-gray-600">Fetching comprehensive case analysis...</p>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Analysis Error State */}
+              {analysisError && (
+                <Card>
+                  <CardContent className="text-center py-12">
+                    <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">Analysis Data Unavailable</h3>
+                    <p className="text-gray-600 mb-4">
+                      Unable to load analysis data. The case may still be processing or an error occurred.
+                    </p>
+                    <Button onClick={refetchAnalysis} variant="outline">
+                      <RefreshCw className="mr-2 h-4 w-4" />
+                      Retry
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Analysis Components */}
+              {!analysisLoading && !analysisError && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Outcome Probability Analysis */}
+                  {analysisData.probability && (
+                    <div className="lg:col-span-2">
+                      <OutcomeProbabilityChart 
+                        data={analysisData.probability}
+                        loading={analysisLoading}
+                        error={analysisError}
+                      />
+                    </div>
+                  )}
+
+                  {/* Settlement vs Trial Analysis */}
+                  {analysisData.settlement && (
+                    <div className="lg:col-span-2">
+                      <SettlementAnalysisComponent 
+                        data={analysisData.settlement}
+                        loading={analysisLoading}
+                        error={analysisError}
+                      />
+                    </div>
+                  )}
+
+                  {/* Risk Assessment Dashboard */}
+                  {analysisData.risk && (
+                    <div className="lg:col-span-2">
+                      <RiskAssessmentDashboard 
+                        data={analysisData.risk}
+                        loading={analysisLoading}
+                        error={analysisError}
+                      />
+                    </div>
+                  )}
+
+                  {/* Precedent Analysis */}
+                  {analysisData.precedents.length > 0 && (
+                    <div className="lg:col-span-2">
+                      <PrecedentAnalysisView 
+                        data={analysisData.precedents}
+                        loading={analysisLoading}
+                        error={analysisError}
+                      />
+                    </div>
+                  )}
+
+                  {/* Fallback for when no analysis data is available */}
+                  {!analysisData.probability && !analysisData.settlement && !analysisData.risk && analysisData.precedents.length === 0 && (
+                    <div className="lg:col-span-2">
+                      <Card>
+                        <CardContent className="text-center py-12">
+                          <Brain className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                          <h3 className="text-lg font-semibold mb-2">Analysis In Progress</h3>
+                          <p className="text-gray-600 mb-4">
+                            AI analysis is being prepared for this case. Enhanced insights will appear here once processing is complete.
+                          </p>
+                          <div className="flex items-center justify-center space-x-2 text-sm text-gray-500">
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            <span>This typically takes 5-7 minutes</span>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Legacy Enhanced Case Data Component */}
+              <div className="mt-8">
+                <EnhancedCaseData caseId={caseId!} />
+              </div>
             </TabsContent>
 
             {/* Details Tab */}
