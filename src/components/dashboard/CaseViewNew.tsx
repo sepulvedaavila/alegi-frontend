@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, FileText, Calendar, User, Building, AlertTriangle, CheckCircle, Clock, DollarSign, TrendingUp, BarChart3, Copy, RefreshCw, Loader2 } from 'lucide-react';
+import { ArrowLeft, FileText, Calendar, User, Building, AlertTriangle, CheckCircle, Clock, DollarSign, TrendingUp, BarChart3, Copy, RefreshCw, Loader2, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -385,14 +385,82 @@ const CaseViewNew = () => {
                     </div>
                   </CardContent>
                 </Card>
-              ) : (
-                <Card>
+              ) : status.processingStatus === 'processing' ? (
+                <Card className="border-blue-200 bg-blue-50">
                   <CardContent className="text-center py-12">
-                    <AlertTriangle className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">AI Analysis Pending</h3>
-                    <p className="text-gray-600 mb-6">
-                      AI analysis will be automatically triggered for your case. Please check back in a few minutes.
+                    <Loader2 className="h-12 w-12 text-blue-600 mx-auto mb-4 animate-spin" />
+                    <h3 className="text-lg font-semibold mb-2 text-blue-900">AI Analysis in Progress</h3>
+                    <p className="text-blue-800 mb-6">
+                      Your case is being analyzed by our AI system. This typically takes 3-7 minutes to complete.
                     </p>
+                    <div className="bg-white p-4 rounded-lg mb-4">
+                      <h4 className="font-medium text-blue-900 mb-2">What's Being Analyzed:</h4>
+                      <div className="grid grid-cols-2 gap-2 text-sm text-blue-800">
+                        <div>• Outcome Probability</div>
+                        <div>• Risk Assessment</div>
+                        <div>• Settlement Analysis</div>
+                        <div>• Precedent Research</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-center space-x-2 text-sm text-blue-700">
+                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-600 border-t-transparent"></div>
+                      <span>You can safely navigate away - we'll notify you when complete</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : (
+                <Card className="border-yellow-200 bg-yellow-50">
+                  <CardContent className="text-center py-12">
+                    <AlertTriangle className="h-12 w-12 text-yellow-600 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold mb-2 text-yellow-900">AI Analysis Pending</h3>
+                    <p className="text-yellow-800 mb-6">
+                      AI analysis will be automatically triggered for your case. Processing should begin shortly.
+                    </p>
+                    <div className="bg-white p-4 rounded-lg">
+                      <h4 className="font-medium text-yellow-900 mb-2">What You Can Do:</h4>
+                      <div className="text-sm text-yellow-800 space-y-1">
+                        <div>• Review your case details in the tabs above</div>
+                        <div>• Add additional documents if needed</div>
+                        <div>• Check back in a few minutes for AI insights</div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Quick Actions for Processing Cases */}
+              {(status.processingStatus === 'processing' || status.processingStatus === 'pending') && (
+                <Card className="border-green-200 bg-green-50">
+                  <CardHeader>
+                    <CardTitle className="text-green-900">Available Actions</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <Button 
+                        variant="outline" 
+                        className="bg-white border-green-300 text-green-800 hover:bg-green-100"
+                        onClick={() => setActiveTab('details')}
+                      >
+                        <FileText className="mr-2 h-4 w-4" />
+                        Review Case Details
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        className="bg-white border-green-300 text-green-800 hover:bg-green-100"
+                        onClick={() => setActiveTab('documents')}
+                      >
+                        <Upload className="mr-2 h-4 w-4" />
+                        Add Documents
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        className="bg-white border-green-300 text-green-800 hover:bg-green-100"
+                        onClick={() => navigate('/dashboard')}
+                      >
+                        <ArrowLeft className="mr-2 h-4 w-4" />
+                        Back to Dashboard
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               )}
@@ -530,16 +598,40 @@ const CaseViewNew = () => {
                   {/* Fallback for when no analysis data is available */}
                   {!analysisData.probability && !analysisData.settlement && !analysisData.risk && analysisData.precedents.length === 0 && (
                     <div className="lg:col-span-2">
-                      <Card>
+                      <Card className="border-blue-200">
                         <CardContent className="text-center py-12">
-                          <Brain className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                          <h3 className="text-lg font-semibold mb-2">Analysis In Progress</h3>
-                          <p className="text-gray-600 mb-4">
-                            AI analysis is being prepared for this case. Enhanced insights will appear here once processing is complete.
+                          <Brain className="h-12 w-12 text-blue-500 mx-auto mb-4" />
+                          <h3 className="text-lg font-semibold mb-2 text-blue-900">AI Analysis In Progress</h3>
+                          <p className="text-blue-700 mb-6">
+                            Our AI system is analyzing your case to provide comprehensive insights. Enhanced analysis will appear here once processing is complete.
                           </p>
-                          <div className="flex items-center justify-center space-x-2 text-sm text-gray-500">
+                          
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                            <div className="p-3 bg-blue-50 rounded-lg">
+                              <TrendingUp className="h-6 w-6 text-blue-600 mx-auto mb-2" />
+                              <p className="text-sm font-medium text-blue-900">Outcome Prediction</p>
+                              <p className="text-xs text-blue-700">Success probability analysis</p>
+                            </div>
+                            <div className="p-3 bg-blue-50 rounded-lg">
+                              <AlertTriangle className="h-6 w-6 text-blue-600 mx-auto mb-2" />
+                              <p className="text-sm font-medium text-blue-900">Risk Assessment</p>
+                              <p className="text-xs text-blue-700">Comprehensive risk analysis</p>
+                            </div>
+                            <div className="p-3 bg-blue-50 rounded-lg">
+                              <DollarSign className="h-6 w-6 text-blue-600 mx-auto mb-2" />
+                              <p className="text-sm font-medium text-blue-900">Settlement Analysis</p>
+                              <p className="text-xs text-blue-700">Settlement vs trial comparison</p>
+                            </div>
+                            <div className="p-3 bg-blue-50 rounded-lg">
+                              <FileText className="h-6 w-6 text-blue-600 mx-auto mb-2" />
+                              <p className="text-sm font-medium text-blue-900">Precedent Research</p>
+                              <p className="text-xs text-blue-700">Similar case analysis</p>
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center justify-center space-x-2 text-sm text-blue-600 bg-blue-50 py-3 px-6 rounded-lg">
                             <Loader2 className="h-4 w-4 animate-spin" />
-                            <span>This typically takes 5-7 minutes</span>
+                            <span>Typically completes in 5-7 minutes • You'll be notified when ready</span>
                           </div>
                         </CardContent>
                       </Card>
@@ -645,7 +737,24 @@ const CaseViewNew = () => {
                       ))}
                     </div>
                   ) : (
-                    <p className="text-gray-500">No documents uploaded</p>
+                    <div className="text-center py-8">
+                      <FileText className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                      <h3 className="text-lg font-semibold text-gray-600 mb-2">No Documents Uploaded</h3>
+                      <p className="text-gray-500 mb-4">
+                        Adding documents can improve the accuracy of AI analysis
+                      </p>
+                      {(status.processingStatus === 'processing' || status.processingStatus === 'pending') && (
+                        <div className="bg-blue-50 p-4 rounded-lg">
+                          <p className="text-sm text-blue-800 mb-3">
+                            💡 You can still add documents while AI analysis is in progress
+                          </p>
+                          <Button className="bg-blue-600 hover:bg-blue-700">
+                            <Upload className="mr-2 h-4 w-4" />
+                            Upload Documents
+                          </Button>
+                        </div>
+                      )}
+                    </div>
                   )}
                 </CardContent>
               </Card>

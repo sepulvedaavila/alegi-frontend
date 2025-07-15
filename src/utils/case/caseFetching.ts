@@ -154,7 +154,9 @@ export const fetchUserCases = async (userId: string): Promise<Case[]> => {
         jurisdiction,
         date_filed,
         created_at,
-        updated_at
+        updated_at,
+        processing_status,
+        ai_processed
       `)
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
@@ -241,7 +243,9 @@ export const fetchUserCases = async (userId: string): Promise<Case[]> => {
         status,
         confidence: getStableConfidence(),
         date: caseData.date_filed || caseData.created_at.split('T')[0],
-        risk
+        risk,
+        processingStatus: caseData.processing_status,
+        aiProcessed: caseData.ai_processed
       };
 
       console.log('Transformed case:', transformedCase);

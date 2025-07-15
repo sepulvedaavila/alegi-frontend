@@ -24,6 +24,23 @@ const DashboardHome = () => {
   // Get case IDs for real-time monitoring
   const userCaseIds = recentCases.map(c => c.id);
 
+  // Initialize processing cases from current case data
+  useEffect(() => {
+    const processingCaseIds = new Set<string>();
+    
+    recentCases.forEach(caseItem => {
+      // Check if case is in processing state
+      if (caseItem.processingStatus === 'processing' || 
+          (caseItem.processingStatus === 'pending' && !caseItem.aiProcessed)) {
+        processingCaseIds.add(caseItem.id);
+        console.log(`Adding case ${caseItem.id} to processing: status=${caseItem.processingStatus}, aiProcessed=${caseItem.aiProcessed}`);
+      }
+    });
+    
+    console.log(`Total processing cases found: ${processingCaseIds.size}`, Array.from(processingCaseIds));
+    setProcessingCases(processingCaseIds);
+  }, [recentCases]);
+
   // Set up real-time updates for user's cases
   const { isConnected, lastUpdate } = useRealtimeCasesUpdates(userCaseIds, {
     onUpdate: (update) => {
@@ -40,6 +57,7 @@ const DashboardHome = () => {
         // Refresh cases to get updated data
         refreshCases();
       } else if (update.processingStatus === 'processing') {
+        toast.info(`Case analysis started: ${update.caseId.slice(0, 8)}...`);
         setProcessingCases(prev => new Set(prev).add(update.caseId));
       } else if (update.processingStatus === 'failed') {
         toast.error(`Case analysis failed: ${update.caseId.slice(0, 8)}...`);
@@ -48,6 +66,8 @@ const DashboardHome = () => {
           newSet.delete(update.caseId);
           return newSet;
         });
+        // Refresh cases to get updated status
+        refreshCases();
       }
     },
     onError: (error) => {

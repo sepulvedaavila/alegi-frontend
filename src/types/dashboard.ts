@@ -54,6 +54,8 @@ export type Case = {
   confidence: number;
   date: string;
   risk: 'Low' | 'Medium' | 'High';
+  processingStatus?: string;
+  aiProcessed?: boolean;
 };
 
 // New MVP Feature Interfaces
