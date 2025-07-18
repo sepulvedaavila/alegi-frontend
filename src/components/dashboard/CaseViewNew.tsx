@@ -27,6 +27,8 @@ import AverageTimeResolutionWidget from '@/components/dashboard/widgets/AverageT
 import CaseProcessingStatus from '@/components/cases/CaseProcessingStatus';
 import CaseProcessingStatusEnhanced from '@/components/cases/CaseProcessingStatusEnhanced';
 import EnhancedCaseData from '@/components/cases/EnhancedCaseData';
+import EnhancedDataDisplay from './EnhancedDataDisplay';
+import AIAnalysisDisplay from './AIAnalysisDisplay';
 
 // Import analysis components
 import { 
@@ -137,19 +139,7 @@ const CaseViewNew = () => {
     );
   }
 
-  const { 
-    case: caseData, 
-    plaintiffs, 
-    defendants, 
-    attorneys, 
-    legalIssues, 
-    evidence, 
-    documents, 
-    enhancedData,
-    aiData, 
-    status,
-    dataQuality
-  } = caseViewData;
+  const { case: caseData, plaintiffs, defendants, attorneys, legalIssues, evidence, documents, enhancedData, aiData, status, dataQuality } = caseViewData;
 
   return (
     <div className="min-h-full bg-gray-50">
@@ -649,6 +639,25 @@ const CaseViewNew = () => {
                       </Card>
                     </div>
                   )}
+                </div>
+              )}
+
+              {/* Enhanced Data Display */}
+              {dataQuality.hasFusedData && (
+                <div className="mt-8">
+                  <EnhancedDataDisplay 
+                    enhancedData={enhancedData}
+                    dataQuality={dataQuality}
+                  />
+                </div>
+              )}
+
+              {/* AI Analysis Display */}
+              {dataQuality.hasAIEnrichment && (
+                <div className="mt-8">
+                  <AIAnalysisDisplay 
+                    aiData={aiData}
+                  />
                 </div>
               )}
 
