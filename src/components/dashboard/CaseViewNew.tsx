@@ -137,7 +137,19 @@ const CaseViewNew = () => {
     );
   }
 
-  const { case: caseData, plaintiffs, defendants, attorneys, legalIssues, evidence, documents, aiData, status } = caseViewData;
+  const { 
+    case: caseData, 
+    plaintiffs, 
+    defendants, 
+    attorneys, 
+    legalIssues, 
+    evidence, 
+    documents, 
+    enhancedData,
+    aiData, 
+    status,
+    dataQuality
+  } = caseViewData;
 
   return (
     <div className="min-h-full bg-gray-50">
@@ -156,7 +168,7 @@ const CaseViewNew = () => {
                 </Button>
                 <div>
                   <h1 className="text-3xl font-bold text-gray-900">
-                    {caseData.case_name || `Case ${caseData.case_number || caseId}`}
+                    {caseData.case_name || `Case ${caseId}`}
                   </h1>
                   <div className="flex items-center space-x-2 mt-2">
                     <p className="text-gray-600">Case ID: {caseId}</p>
@@ -508,7 +520,7 @@ const CaseViewNew = () => {
                         {attorneys.map((attorney) => (
                           <Badge key={attorney.id} variant="outline">
                             <User className="mr-1 h-3 w-3" />
-                            {attorney.name} {attorney.bar_id && `(Bar: ${attorney.bar_id})`}
+                            {attorney.name} {attorney.firm && `(${attorney.firm})`}
                           </Badge>
                         ))}
                       </div>
@@ -688,7 +700,7 @@ const CaseViewNew = () => {
                     </div>
                     <div>
                       <h4 className="font-semibold mb-1">Case Number</h4>
-                      <p className="text-gray-700">{caseData.case_number || 'Not assigned'}</p>
+                      <p className="text-gray-700">{caseData.id || 'Not assigned'}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -704,7 +716,7 @@ const CaseViewNew = () => {
                       {legalIssues.map((issue) => (
                         <div key={issue.id} className="flex items-start space-x-2">
                           <span className="text-blue-500 mt-1">•</span>
-                          <span className="text-gray-700">{issue.issue}</span>
+                          <span className="text-gray-700">{issue.description}</span>
                         </div>
                       ))}
                     </div>
@@ -770,7 +782,7 @@ const CaseViewNew = () => {
                         <div key={item.id} className="p-3 border rounded-lg">
                           <div className="flex items-start justify-between">
                             <div>
-                              <p className="font-medium">{item.type}</p>
+                              <p className="font-medium">{item.evidence_type}</p>
                               <p className="text-sm text-gray-600 mt-1">{item.description}</p>
                             </div>
                           </div>
